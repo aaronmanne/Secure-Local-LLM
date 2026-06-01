@@ -5,7 +5,7 @@
     Regulatory basis: NIST SP 800-53 CM-8; NIST AI 600-1; CMMC 2.0 CM.L2-3.4.1
 #>
 
-# ─── Execution Policy Guard ───────────────────────────────────────────────────
+# --- Execution Policy Guard ---------------------------------------------------
 # Run via llm-hardening-menu.bat, or:
 #   powershell.exe -ExecutionPolicy Bypass -File <this-script>
 if ($MyInvocation.ScriptName -ne '' -and
@@ -31,31 +31,29 @@ function Write-Prohibited { param($t) Write-Host "[PROHIBITED] $t" -ForegroundCo
 function Write-Review     { param($t) Write-Host "[REVIEW]     $t" -ForegroundColor Magenta }
 function Write-Info       { param($t) Write-Host "  $t" }
 
-Write-Host @"
-╔══════════════════════════════════════════════════════════╗
-║     Windows LLM & AI Agent Installation Identifier      ║
-║  Ref: NIST SP 800-53 CM-8 · NIST AI 600-1              ║
-║       CMMC 2.0 CM.L2-3.4.1 · DFARS 252.204-7012        ║
-╚══════════════════════════════════════════════════════════╝
-"@ -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
+Write-Host "     Windows LLM & AI Agent Installation Identifier      " -ForegroundColor Cyan
+Write-Host "  Ref: NIST SP 800-53 CM-8 . NIST AI 600-1                " -ForegroundColor Cyan
+Write-Host "       CMMC 2.0 CM.L2-3.4.1 . DFARS 252.204-7012          " -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "Date: $(Get-Date) | Host: $env:COMPUTERNAME | User: $env:USERNAME"
 Write-Host ""
 
-# ─── 1. RUNNING INFERENCE SERVER PROCESSES ────────────────────────────────────
+# --- 1. RUNNING INFERENCE SERVER PROCESSES ------------------------------------
 Write-Header "1. Running Inference Server Processes"
 $inferenceProcs = Get-Process | Where-Object { $_.Name -match $LLM_ProcessPattern }
 if ($inferenceProcs) {
     $inferenceProcs | ForEach-Object { Write-Found "Process: $($_.Name) (PID: $($_.Id))" }
 } else { Write-Info "No inference server processes running." }
 
-# ─── 2. RUNNING AI AGENT PROCESSES ───────────────────────────────────────────
+# --- 2. RUNNING AI AGENT PROCESSES -------------------------------------------
 Write-Header "2. Running AI Agent / Framework Processes"
 $agentProcs = Get-Process | Where-Object { $_.Name -match $Agent_ProcessPattern }
 if ($agentProcs) {
     $agentProcs | ForEach-Object { Write-Warn "Agent process: $($_.Name) (PID: $($_.Id))" }
 } else { Write-Info "No AI agent processes running." }
 
-# ─── 3. INSTALLED APPLICATIONS ────────────────────────────────────────────────
+# --- 3. INSTALLED APPLICATIONS ------------------------------------------------
 Write-Header "3. Installed LLM / Agent Applications"
 $regPaths = @(
     'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
@@ -84,7 +82,7 @@ if ($pip) {
 }
 if (-not $foundApps) { Write-Info "No LLM/agent applications found." }
 
-# ─── 4. AGENT CONFIG DIRECTORIES ──────────────────────────────────────────────
+# --- 4. AGENT CONFIG DIRECTORIES ----------------------------------------------
 Write-Header "4. Agent Config / Workspace Directories"
 $agentDirs = @(
     "$env:USERPROFILE\.autogpt", "$env:USERPROFILE\AutoGPT", "$env:USERPROFILE\Auto-GPT",
@@ -102,8 +100,8 @@ foreach ($d in $agentDirs) {
     if (Test-Path $d) { Write-Warn "Agent config dir: $d" }
 }
 
-# ─── 5. MODEL DIRECTORIES ─────────────────────────────────────────────────────
-Write-Header "5. Model Directories  [NIST AI 600-1 §2.5: Model Provenance]"
+# --- 5. MODEL DIRECTORIES -----------------------------------------------------
+Write-Header "5. Model Directories  [NIST AI 600-1 $2.5: Model Provenance]"
 foreach ($dir in $ModelDirs) {
     if (Test-Path $dir) {
         $count = (Get-ChildItem -Path $dir -Recurse -Include $ModelExtensions -ErrorAction SilentlyContinue | Measure-Object).Count
@@ -112,13 +110,13 @@ foreach ($dir in $ModelDirs) {
     }
 }
 
-# ─── 6. OLLAMA REGISTERED MODELS ──────────────────────────────────────────────
+# --- 6. OLLAMA REGISTERED MODELS ----------------------------------------------
 Write-Header "6. Ollama Registered Models"
 if (Get-Command ollama 2>$null) {
     try { ollama list } catch { Write-Info "Ollama not responding." }
 } else { Write-Info "Ollama not installed." }
 
-# ─── 7. ALL MODEL FILES ───────────────────────────────────────────────────────
+# --- 7. ALL MODEL FILES FOUND -------------------------------------------------
 Write-Header "7. All Model Files Found"
 Write-Info "(searching user profile...)"
 Get-ChildItem -Path $env:USERPROFILE -Recurse -Include $ModelExtensions -ErrorAction SilentlyContinue |
@@ -127,7 +125,7 @@ Get-ChildItem -Path $env:USERPROFILE -Recurse -Include $ModelExtensions -ErrorAc
         Write-Info "[${sizeMB}MB] $($_.FullName)"
     }
 
-# ─── 8. PROHIBITED MODEL SCAN ─────────────────────────────────────────────────
+# --- 8. PROHIBITED MODEL SCAN -------------------------------------------------
 Write-Header "8. Prohibited / Foreign-Origin Model Scan  [FBI-DEEPSEEK; HOUSE-DEEPSEEK]"
 Get-ChildItem -Path $env:USERPROFILE -Recurse -Include $ModelExtensions -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -match $ProhibitedPattern } |
@@ -141,7 +139,7 @@ Get-ChildItem -Path $env:USERPROFILE -Recurse -Include $ModelExtensions -ErrorAc
     Where-Object { $_.Name -match $ReviewPattern } |
     ForEach-Object { Write-Review "VERIFY ORIGIN: $($_.FullName)" }
 
-# ─── 9. NETWORK EXPOSURE ──────────────────────────────────────────────────────
+# --- 9. NETWORK EXPOSURE ------------------------------------------------------
 Write-Header "9. Network Exposure Check  [NIST SP 800-53 SC-7: Boundary Protection]"
 foreach ($portEntry in $LLM_Ports.GetEnumerator()) {
     $port = $portEntry.Key; $tool = $portEntry.Value
@@ -149,23 +147,23 @@ foreach ($portEntry in $LLM_Ports.GetEnumerator()) {
     if ($conns) {
         foreach ($c in $conns) {
             if ($c.LocalAddress -in @('0.0.0.0','::','*')) {
-                Write-Warn "Port $port ($tool) EXPOSED on all interfaces!  [NIST SP 800-53 SC-7]"
+                Write-Warn "Port $port ($tool) EXPOSED on all interfaces! [NIST SP 800-53 SC-7]"
             } else {
-                Write-Found "Port $port ($tool) — localhost-bound ($($c.LocalAddress))"
+                Write-Found "Port $port ($tool) - localhost-bound ($($c.LocalAddress))"
             }
         }
     }
 }
 
-# ─── 10. OLLAMA HOST ENV ──────────────────────────────────────────────────────
-Write-Header "10. Ollama Configuration  [NIST SP 800-53 SC-7, IA-3]"
+# --- 10. OLLAMA HOST ENV ------------------------------------------------------
+Write-Header "10. Ollama Configuration [NIST SP 800-53 SC-7, IA-3]"
 $oh = [System.Environment]::GetEnvironmentVariable('OLLAMA_HOST', 'User')
 if ($oh) {
-    if ($oh -match '0\.0\.0\.0|^:') { Write-Warn "OLLAMA_HOST=$oh — EXPOSED!  [NIST SP 800-53 SC-7]" }
+    if ($oh -match '0\.0\.0\.0|^:') { Write-Warn "OLLAMA_HOST=$oh - EXPOSED! [NIST SP 800-53 SC-7]" }
     else { Write-Found "OLLAMA_HOST=$oh" }
 } else { Write-Info "OLLAMA_HOST not set (defaults to localhost)." }
 
-# ─── 11. MCP CONFIG SCAN ──────────────────────────────────────────────────────
+# --- 11. MCP CONFIG SCAN ------------------------------------------------------
 Write-Header "11. MCP Config Files  [NIST AI 100-2; NSA-AI-SECURITY]"
 foreach ($f in $McpConfigPaths) {
     if (Test-Path $f) {
@@ -179,7 +177,7 @@ foreach ($f in $McpConfigPaths) {
 Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter 'mcp.json' -ErrorAction SilentlyContinue |
     ForEach-Object { Write-Warn "mcp.json: $($_.FullName)" }
 
-# ─── SUMMARY ──────────────────────────────────────────────────────────────────
+# --- SUMMARY ------------------------------------------------------------------
 Write-Host "`n=== Scan Complete ===" -ForegroundColor Cyan
 Write-Host "Run audit.ps1 for full checklist or harden.ps1 to apply controls."
 Show-FederalReferences

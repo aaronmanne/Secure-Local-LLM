@@ -6,7 +6,7 @@
                       NIST AI 600-1; DFARS 252.204-7012; CMMC 2.0
 #>
 
-# ─── Execution Policy Guard ───────────────────────────────────────────────────
+# --- Execution Policy Guard ---------------------------------------------------
 # Run via llm-hardening-menu.bat, or:
 #   powershell.exe -ExecutionPolicy Bypass -File <this-script>
 if ($MyInvocation.ScriptName -ne '' -and
@@ -34,20 +34,18 @@ function Write-Action  { param($t) Write-Host "[ACTION] $t" -ForegroundColor Cya
 function Write-Skip    { param($t) Write-Host "  [SKIP] $t" }
 function Confirm-Step  { param($m) ($Host.UI.PromptForChoice('', $m, @('&Yes','&No'), 1)) -eq 0 }
 
-Write-Host @"
-╔══════════════════════════════════════════════════════════╗
-║           Windows LLM Hardening Script                  ║
-║  Ref: NIST SP 800-53 SC-7 · AC-6 · AU-2 · CM-7         ║
-║       NIST AI 600-1 · DFARS 252.204-7012 · CMMC 2.0    ║
-╚══════════════════════════════════════════════════════════╝
-"@ -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
+Write-Host "           Windows LLM Hardening Script                  " -ForegroundColor Cyan
+Write-Host "  Ref: NIST SP 800-53 SC-7 . AC-6 . AU-2 . CM-7          " -ForegroundColor Cyan
+Write-Host "       NIST AI 600-1 . DFARS 252.204-7012 . CMMC 2.0      " -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "Date: $(Get-Date) | Host: $env:COMPUTERNAME | User: $env:USERNAME"
-if (-not $isAdmin) { Write-Warn "Not running as Administrator — firewall/service steps will be skipped." }
+if (-not $isAdmin) { Write-Warn "Not running as Administrator - firewall/service steps will be skipped." }
 Write-Host ""
 if (-not (Confirm-Step "Continue with hardening?")) { Write-Host "Aborted."; exit 0 }
 
-# ─── 1. STOP PROCESSES / SERVICES ─────────────────────────────────────────────
-Write-Header "1. Stop LLM / Agent Processes  [NIST SP 800-53 CM-7]"
+# --- 1. STOP PROCESSES / SERVICES ---------------------------------------------
+hdr "1. Stop LLM / Agent Processes  [NIST SP 800-53 CM-7]"
 $stopNames = @('ollama','lmstudio','lm-studio','localai','jan','koboldcpp','tabby','text-generation-webui','vllm')
 foreach ($name in $stopNames) {
     $procs = Get-Process -Name $name -ErrorAction SilentlyContinue
@@ -58,7 +56,7 @@ foreach ($name in $stopNames) {
 $ollamaSvc = Get-Service 'ollama' -ErrorAction SilentlyContinue
 if ($ollamaSvc) { Stop-Service 'ollama' -Force; Write-Ok "Ollama service stopped." }
 
-# ─── 2. RESTRICT OLLAMA TO LOCALHOST ──────────────────────────────────────────
+# --- 2. RESTRICT OLLAMA TO LOCALHOST ------------------------------------------
 Write-Header "2. Restrict Ollama to Localhost  [NIST SP 800-53 SC-7, IA-3]"
 [System.Environment]::SetEnvironmentVariable('OLLAMA_HOST', '127.0.0.1', 'User')
 Write-Ok "OLLAMA_HOST=127.0.0.1 (user scope)"
@@ -74,7 +72,7 @@ if ($isAdmin) {
     }
 }
 
-# ─── 3. WINDOWS FIREWALL ──────────────────────────────────────────────────────
+# --- 3. WINDOWS FIREWALL ------------------------------------------------------
 Write-Header "3. Firewall Rules  [NIST SP 800-53 SC-7; CMMC AC.L2-3.1.3]"
 if (-not $isAdmin) { Write-Skip "Firewall rules require Administrator."; }
 else {
@@ -88,11 +86,11 @@ else {
         New-NetFirewallRule -DisplayName "LLM-Allow-Localhost-$port" -Direction Inbound -Protocol TCP `
             -LocalPort $port -RemoteAddress '127.0.0.1' -Action Allow -Profile Any `
             -Description "LLM Hardening [NIST SC-7]: allow localhost access to $tool port $port" | Out-Null
-        Write-Ok "Firewall: $port ($tool) — blocked external / allowed localhost"
+        Write-Ok "Firewall: $port ($tool) - blocked external / allowed localhost"
     }
 }
 
-# ─── 4. FILE PERMISSIONS ──────────────────────────────────────────────────────
+# --- 4. FILE PERMISSIONS ------------------------------------------------------
 Write-Header "4. Restrict Model Directory Permissions  [NIST SP 800-53 AC-3, AC-6]"
 foreach ($dir in $ModelDirs) {
     if (Test-Path $dir) {
@@ -107,8 +105,8 @@ foreach ($dir in $ModelDirs) {
     }
 }
 
-# ─── 5. PROHIBITED MODEL REMOVAL ──────────────────────────────────────────────
-Write-Header "5. Prohibited Model Removal  [FBI-DEEPSEEK; HOUSE-DEEPSEEK; NIST AI 600-1 §2.5]"
+# --- 5. PROHIBITED MODEL REMOVAL ----------------------------------------------
+Write-Header "5. Prohibited Model Removal  [FBI-DEEPSEEK; HOUSE-DEEPSEEK; NIST AI 600-1 $2.5]"
 $quarantineDir = "$env:USERPROFILE\llm-quarantine-$(Get-Date -Format 'yyyyMMdd_HHmmss')"
 $foundProhibited = 0
 Get-ChildItem -Path $env:USERPROFILE -Recurse -Include $ModelExtensions -ErrorAction SilentlyContinue |
@@ -132,7 +130,7 @@ if (Get-Command ollama 2>$null) {
 }
 if ($foundProhibited -eq 0) { Write-Ok "No prohibited models found." }
 
-# ─── 6. DISABLE AUTO-START ────────────────────────────────────────────────────
+# --- 6. DISABLE AUTO-START ----------------------------------------------------
 Write-Header "6. Disable Auto-Start  [NIST SP 800-53 CM-7]"
 if ($isAdmin -and $ollamaSvc -and $ollamaSvc.StartType -ne 'Disabled') {
     if (Confirm-Step "  Disable Ollama service auto-start?") {
@@ -153,11 +151,11 @@ if ($isAdmin -and $ollamaSvc -and $ollamaSvc.StartType -ne 'Disabled') {
         }
     }
 
-# ─── 7. AUDIT LOG ─────────────────────────────────────────────────────────────
+# --- 7. AUDIT LOG -------------------------------------------------------------
 Write-Header "7. Hardening Log  [NIST SP 800-53 AU-2, AU-12]"
 $logFile = "$env:USERPROFILE\llm-hardening-$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 @"
-LLM Hardening Report — Windows
+LLM Hardening Report - Windows
 Date: $(Get-Date)
 Host: $env:COMPUTERNAME  |  User: $env:USERNAME  |  Admin: $isAdmin
 Regulatory basis: NIST SP 800-53, NIST AI 600-1, DFARS 252.204-7012, CMMC 2.0
@@ -176,7 +174,7 @@ $(netsh advfirewall show currentprofile 2>$null | Select-String 'State')
 "@ | Out-File -FilePath $logFile -Encoding UTF8
 Write-Ok "Log saved: $logFile  [NIST AU-2]"
 
-# ─── REFERENCES ───────────────────────────────────────────────────────────────
+# --- REFERENCES ---------------------------------------------------------------
 Show-FederalReferences
 
 Write-Host "`n=== Hardening Complete ===" -ForegroundColor Green

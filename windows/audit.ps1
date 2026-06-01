@@ -6,7 +6,7 @@
                       DFARS 252.204-7012; EO 14110; FBI-DEEPSEEK
 #>
 
-# ─── Execution Policy Guard ───────────────────────────────────────────────────
+# --- Execution Policy Guard ---------------------------------------------------
 # Run via llm-hardening-menu.bat, or:
 #   powershell.exe -ExecutionPolicy Bypass -File <this-script>
 if ($MyInvocation.ScriptName -ne '' -and
@@ -35,17 +35,15 @@ function hdr        { param($t) Write-Host "`n=== $t ===" -ForegroundColor Cyan 
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
-Write-Host @"
-╔══════════════════════════════════════════════════════════╗
-║     Windows LLM & Agent Security Audit Checklist        ║
-║  Ref: NIST SP 800-53 · NIST AI 600-1 · CMMC 2.0        ║
-║       DFARS 252.204-7012 · EO 14110 · FBI-DEEPSEEK      ║
-╚══════════════════════════════════════════════════════════╝
-"@ -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
+Write-Host "     Windows LLM & Agent Security Audit Checklist        " -ForegroundColor Cyan
+Write-Host "  Ref: NIST SP 800-53 . NIST AI 600-1 . CMMC 2.0          " -ForegroundColor Cyan
+Write-Host "       DFARS 252.204-7012 . EO 14110 . FBI-DEEPSEEK      " -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "Date: $(Get-Date) | Host: $env:COMPUTERNAME | User: $env:USERNAME"
-if (-not $isAdmin) { Write-Host "[NOTE] Not running as Administrator — some checks limited." -ForegroundColor Yellow }
+if (-not $isAdmin) { Write-Host "[NOTE] Not running as Administrator - some checks limited." -ForegroundColor Yellow }
 
-# ─── Check 1: Inference Servers ───────────────────────────────────────────────
+# --- Check 1: Inference Servers -----------------------------------------------
 hdr "Check 1: Inference Server Software  [NIST SP 800-53 CM-7]"
 $F = 0
 Get-Process | Where-Object { $_.Name -match $LLM_ProcessPattern } |
@@ -55,8 +53,8 @@ foreach ($cmd in $LLM_CLITools) { if (Get-Command $cmd 2>$null) { chk_warn "CLI:
     Where-Object { Test-Path $_ } | ForEach-Object { chk_warn "App dir: $_"; $F++ }
 if ($F -eq 0) { chk_pass "No inference server software detected." }
 
-# ─── Check 2: AI Agents ───────────────────────────────────────────────────────
-hdr "Check 2: AI Agent Frameworks  [NIST AI 600-1 §2.6; NIST SP 800-53 SA-4]"
+# --- Check 2: AI Agents -------------------------------------------------------
+hdr "Check 2: AI Agent Frameworks  [NIST AI 600-1 $2.6; NIST SP 800-53 SA-4]"
 $F = 0
 Get-Process | Where-Object { $_.Name -match $Agent_ProcessPattern } |
     ForEach-Object { chk_warn "Agent process: $($_.Name)"; $F++ }
@@ -69,15 +67,15 @@ foreach ($cmd in $Agent_CLITools) { if (Get-Command $cmd 2>$null) { chk_warn "Ag
     Where-Object { Test-Path $_ } | ForEach-Object { chk_warn "Agent config: $_"; $F++ }
 if ($F -eq 0) { chk_pass "No AI agent frameworks detected." }
 
-# ─── Check 3: Vector Databases ────────────────────────────────────────────────
+# --- Check 3: Vector Databases ------------------------------------------------
 hdr "Check 3: Vector Databases  [NIST SP 800-53 SC-28]"
 $F = 0
 Get-Process | Where-Object { $_.Name -match $VectorDBPattern } |
     ForEach-Object { chk_warn "Vector DB: $($_.Name)"; $F++ }
 if ($F -eq 0) { chk_pass "No vector database processes detected." }
 
-# ─── Check 4: Models Present ──────────────────────────────────────────────────
-hdr "Check 4: Model Files Present  [NIST AI 600-1 §2.5]"
+# --- Check 4: Models Present --------------------------------------------------
+hdr "Check 4: Model Files Present  [NIST AI 600-1 $2.5]"
 $totalModels = 0
 foreach ($dir in $ModelDirs) {
     if (Test-Path $dir) {
@@ -87,8 +85,8 @@ foreach ($dir in $ModelDirs) {
 }
 if ($totalModels -eq 0) { chk_pass "No model files in default locations." }
 
-# ─── Check 5: Prohibited Models ───────────────────────────────────────────────
-hdr "Check 5: Prohibited Models  [FBI-DEEPSEEK; HOUSE-DEEPSEEK; NIST AI 600-1 §2.5]"
+# --- Check 5: Prohibited Models -----------------------------------------------
+hdr "Check 5: Prohibited Models  [FBI-DEEPSEEK; HOUSE-DEEPSEEK; NIST AI 600-1 $2.5]"
 $pCount = 0
 Get-ChildItem -Path $env:USERPROFILE -Recurse -Include $ModelExtensions -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -match $ProhibitedPattern } |
@@ -99,15 +97,15 @@ if (Get-Command ollama 2>$null) {
 }
 if ($pCount -eq 0) { chk_pass "No prohibited models detected." }
 
-# ─── Check 6: Review-Warranted Models ────────────────────────────────────────
-hdr "Check 6: Models Requiring Provenance Review  [NIST AI 600-1 §2.5]"
+# --- Check 6: Review-Warranted Models ----------------------------------------
+hdr "Check 6: Models Requiring Provenance Review  [NIST AI 600-1 $2.5]"
 $rCount = 0
 Get-ChildItem -Path $env:USERPROFILE -Recurse -Include $ModelExtensions -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -match $ReviewPattern } |
     ForEach-Object { chk_review "Verify origin: $($_.FullName)"; $rCount++ }
 if ($rCount -eq 0) { chk_pass "No review-warranted models detected." }
 
-# ─── Check 7: Network Binding ─────────────────────────────────────────────────
+# --- Check 7: Network Binding -------------------------------------------------
 hdr "Check 7: Network Port Binding  [NIST SP 800-53 SC-7: Boundary Protection]"
 foreach ($portEntry in $LLM_Ports.GetEnumerator()) {
     $port = $portEntry.Key; $tool = $portEntry.Value

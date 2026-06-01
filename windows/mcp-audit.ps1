@@ -5,7 +5,7 @@
     Regulatory basis: NIST AI 100-2; NSA-AI-SECURITY; NIST SP 800-53 SI-3, CA-7
 #>
 
-# ─── Execution Policy Guard ───────────────────────────────────────────────────
+# --- Execution Policy Guard ---------------------------------------------------
 # Run via llm-hardening-menu.bat, or:
 #   powershell.exe -ExecutionPolicy Bypass -File <this-script>
 if ($MyInvocation.ScriptName -ne '' -and
@@ -31,16 +31,14 @@ function chk_warn { param($t) Write-Host "[WARN] $t" -ForegroundColor Yellow; $s
 function chk_fail { param($t) Write-Host "[FAIL] $t" -ForegroundColor Red;    $script:Fail++ }
 function hdr      { param($t) Write-Host "`n=== $t ===" -ForegroundColor Cyan }
 
-Write-Host @"
-╔══════════════════════════════════════════════════════════╗
-║         Windows MCP Security Audit                      ║
-║  Ref: NIST AI 100-2 · NSA-AI-SECURITY · NIST 800-53    ║
-║       SI-3 · CA-7 · SA-12 · IA-5                       ║
-╚══════════════════════════════════════════════════════════╝
-"@ -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
+Write-Host "         Windows MCP Security Audit                      " -ForegroundColor Cyan
+Write-Host "  Ref: NIST AI 100-2 . NSA-AI-SECURITY . NIST 800-53      " -ForegroundColor Cyan
+Write-Host "       SI-3 . CA-7 . SA-12 . IA-5                        " -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "Date: $(Get-Date) | Host: $env:COMPUTERNAME"
 
-# ─── 1. Discover MCP Configs ──────────────────────────────────────────────────
+# --- 1. Discover MCP Configs --------------------------------------------------
 hdr "1. MCP Config Discovery  [NIST SP 800-53 CM-8]"
 $allMcpFiles = [System.Collections.Generic.List[string]]::new()
 
@@ -65,8 +63,8 @@ Get-ChildItem -Path $env:APPDATA -Recurse -Filter '*.json' -ErrorAction Silently
     }
 if ($allMcpFiles.Count -eq 0) { chk_pass "No MCP config files found." }
 
-# ─── 2. Analyze Configs ───────────────────────────────────────────────────────
-hdr "2. MCP Config Analysis  [NIST AI 100-2; NSA-AI-SECURITY §4]"
+# --- 2. Analyze Configs -------------------------------------------------------
+hdr "2. MCP Config Analysis  [NIST AI 100-2; NSA-AI-SECURITY $4]"
 foreach ($f in $allMcpFiles) {
     Write-Host "`n  File: $f" -ForegroundColor White
     $c = Get-Content $f -Raw 2>$null; if (-not $c) { continue }
@@ -74,7 +72,7 @@ foreach ($f in $allMcpFiles) {
     # Remote servers
     if ($c -match '"url"\s*:') {
         $urls = [regex]::Matches($c, '"url"\s*:\s*"([^"]+)"') | ForEach-Object { $_.Groups[1].Value }
-        chk_fail "REMOTE MCP SERVER(S) in $f  [FBI-FOREIGN-AI; NIST AI 600-1 §2.5]"
+        chk_fail "REMOTE MCP SERVER(S) in $f  [FBI-FOREIGN-AI; NIST AI 600-1 $2.5]"
         $urls | ForEach-Object { Write-Host "    URL: $_" -ForegroundColor Red }
     }
     # Credentials
@@ -87,7 +85,7 @@ foreach ($f in $allMcpFiles) {
     }
     # npx -y
     if ($c -match '"npx"' -and $c -match '"-y"') {
-        chk_warn "npx -y (supply chain risk) in $f  [NIST SP 800-218 §2.1]"
+        chk_warn "npx -y (supply chain risk) in $f  [NIST SP 800-218 $2.1]"
     }
     # Broad paths
     if ($c -match '"C:\\\\"\s*[,\]]|"~"\s*[,\]]') {
@@ -101,15 +99,15 @@ foreach ($f in $allMcpFiles) {
     }
 }
 
-# ─── 3. Running MCP Processes ─────────────────────────────────────────────────
+# --- 3. Running MCP Processes -------------------------------------------------
 hdr "3. Running MCP Processes  [NIST SP 800-53 CM-7]"
 $mcpProcs = Get-Process | Where-Object { $_.Name -match 'mcp|modelcontext' }
 if ($mcpProcs) { chk_warn "MCP processes:"; $mcpProcs | Format-Table Name,Id -AutoSize }
 else { chk_pass "No MCP processes." }
 $runtimeProcs = Get-Process | Where-Object { $_.Name -match '^node$|^python$|^python3$' }
-if ($runtimeProcs) { chk_warn "Node/Python running (common MCP runtimes) — verify expected." }
+if ($runtimeProcs) { chk_warn "Node/Python running (common MCP runtimes) - verify expected." }
 
-# ─── 4. Outbound Connections ──────────────────────────────────────────────────
+# --- 4. Outbound Connections --------------------------------------------------
 hdr "4. Outbound Connections from MCP Runtimes  [NIST SP 800-53 SC-7, SI-4]"
 if ($runtimeProcs) {
     $pids = $runtimeProcs.Id
@@ -121,8 +119,8 @@ if ($runtimeProcs) {
     } else { chk_pass "No non-localhost outbound connections from Node/Python." }
 } else { chk_pass "No Node/Python runtimes running." }
 
-# ─── 5. Agent Tool Configs ────────────────────────────────────────────────────
-hdr "5. AI Agent Tool Configs  [NIST AI 600-1 §2.6]"
+# --- 5. Agent Tool Configs ----------------------------------------------------
+hdr "5. AI Agent Tool Configs  [NIST AI 600-1 $2.6]"
 @(
     "$env:USERPROFILE\.aider.conf.yml",
     "$env:USERPROFILE\.goose\config.yaml",
@@ -133,18 +131,18 @@ hdr "5. AI Agent Tool Configs  [NIST AI 600-1 §2.6]"
     chk_warn "Agent config: $_"
     $c = Get-Content $_ -Raw 2>$null
     if ($c -match 'url|endpoint|host|api_key|token') {
-        chk_warn "  >> External endpoint or credential ref — review!  [NIST AI 600-1 §2.6]"
+        chk_warn "  >> External endpoint or credential ref - review!  [NIST AI 600-1 $2.6]"
     }
 }
 
-# ─── SUMMARY ──────────────────────────────────────────────────────────────────
-Write-Host "`n╔══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║              MCP AUDIT SUMMARY                          ║" -ForegroundColor Cyan
-Write-Host "╚══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+# --- SUMMARY ------------------------------------------------------------------
+Write-Host "==========================================================" -ForegroundColor Cyan
+Write-Host "              MCP AUDIT SUMMARY                          " -ForegroundColor Cyan
+Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "  PASS: $Pass  " -ForegroundColor Green -NoNewline
 Write-Host "WARN: $Warn  "   -ForegroundColor Yellow -NoNewline
 Write-Host "FAIL: $Fail"     -ForegroundColor Red
-if ($Fail -gt 0)     { Write-Host "CRITICAL: $Fail issue(s) — escalate to InfoSec immediately." -ForegroundColor Red }
+if ($Fail -gt 0)     { Write-Host "CRITICAL: $Fail issue(s) - escalate to InfoSec immediately." -ForegroundColor Red }
 elseif ($Warn -gt 0) { Write-Host "REVIEW: $Warn item(s) need manual review." -ForegroundColor Yellow }
 else                 { Write-Host "No MCP issues detected." -ForegroundColor Green }
 
