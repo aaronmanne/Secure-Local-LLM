@@ -1,6 +1,8 @@
 # Securing Local LLM Software
 ### Best Practices and Federal Contractor Considerations
 
+> **Regulatory Coverage:** NIST AI 100-1 · NIST AI 600-1 · NIST SP 800-53 Rev 5 · NIST SP 800-171 Rev 3 · EO 14110 · OMB M-24-10 · CISA AI Guidance · NSA-AI-SECURITY · FBI DeepSeek Advisory · DFARS 252.204-7012 · CMMC 2.0 · FISMA
+
 ---
 
 ## Table of Contents
@@ -9,13 +11,9 @@
 2. [Key Risks](#key-risks)
 3. [Best Practices for Securing Local LLM Tools](#best-practices-for-securing-local-llm-tools)
 4. [Common Local LLM Tools – What to Know](#common-local-llm-tools--what-to-know)
-   - [Comparison Table](#comparison-table)
-   - [Ollama](#ollama)
-   - [LM Studio](#lm-studio)
-   - [LocalAI](#localai)
-   - [GPT4All](#gpt4all)
-   - [Jan.ai](#janai)
-   - [Open WebUI / Ollama-backed frontends](#open-webui--anything-connecting-to-ollama-backend)
+   - [Inference Servers & Runtimes](#inference-servers--runtimes)
+   - [AI Agent Frameworks & Coding Agents](#ai-agent-frameworks--coding-agents)
+   - [Vector Databases (RAG Backends)](#vector-databases-rag-backends)
 5. [Model File Types to Know](#model-file-types-to-know)
 6. [Foreign / Prohibited Model Names to Watch For](#foreign--prohibited-model-names-to-watch-for)
 7. [How to Search for These on a System](#how-to-search-for-these-on-a-system)
@@ -26,7 +24,8 @@
 12. [Approved Model Sources](#approved-model-sources-reference)
 13. [Useful Commands Reference Card](#useful-commands-reference-card)
 14. [MCP (Model Context Protocol) Security](#mcp-model-context-protocol-security)
-15. [Using the Hardening Scripts in This Repo](#using-the-hardening-scripts-in-this-repo)
+15. [U.S. Federal Guidance & Regulatory Citations](#us-federal-guidance--regulatory-citations)
+16. [Using the Hardening Scripts in This Repo](#using-the-hardening-scripts-in-this-repo)
 
 ---
 
@@ -81,7 +80,98 @@ Any local LLM tool should be treated as a **developer-oriented component**, not 
 
 ## Common Local LLM Tools – What to Know
 
-### Comparison Table
+### Inference Servers & Runtimes
+
+| Tool | Default Port(s) | Windows Model Dir | macOS Model Dir | Linux Model Dir | Notes |
+|---|---|---|---|---|---|
+| **Ollama** | `11434` | `%USERPROFILE%\.ollama\models` | `~/.ollama/models` | `/usr/share/ollama/.ollama/models` | Config via `OLLAMA_HOST` |
+| **LM Studio** | `1234` | `%USERPROFILE%\.lmstudio\models` | `~/.lmstudio/models` | `~/.lmstudio/models` | GUI-based config |
+| **LocalAI** | `8080` | `./models` | `./models` | `/usr/share/local-ai/models` | Often binds `0.0.0.0` |
+| **GPT4All** | varies | `%LOCALAPPDATA%\nomic.ai\GPT4All` | `~/Library/Application Support/nomic.ai/GPT4All/` | `~/.local/share/nomic.ai/GPT4All/` | Local GUI or server |
+| **Jan.ai** | varies | `~/jan/models/` | `~/jan/models/` | `~/jan/models/` | Folder-based |
+| **LM Deploy** | `8000` | N/A | `~/.lmdeploy/` | `~/.lmdeploy/` | HuggingFace backend |
+| **text-generation-webui** | `7860` | `~/text-generation-webui/models` | same | same | Gradio UI; also `5000` |
+| **KoboldCPP / KoboldAI** | `5001` | `~/koboldcpp/` | `~/.cache/koboldcpp/` | `~/.cache/koboldcpp/` | Formerly `50013` |
+| **TabbyML / Tabby** | `8080` / `5000` | `%LOCALAPPDATA%\Programs\Tabby` | `~/.tabby/` | `~/.tabby/` | AI coding server |
+| **vLLM** | `8000` | N/A | N/A | pip-installed | GPU inference; cluster-capable |
+| **Xinference** | `9997` | N/A | `~/.cache/xinference/` | `~/.cache/xinference/` | Distributed inference |
+| **PrivateGPT** | `8001` | `~/privategpt/models` | same | same | RAG-enabled local LLM |
+| **AnythingLLM** | `3001` | `%LOCALAPPDATA%\Programs\AnythingLLM` | `~/anythingllm/` | `~/anythingllm/` | Multi-model frontend |
+| **Msty** | varies | `%LOCALAPPDATA%\Programs\Msty` | `~/Library/Application Support/Msty/` | N/A | Desktop GUI |
+| **SillyTavern** | `8000` | `~/SillyTavern/` | same | same | Chat frontend / RP |
+| **Open WebUI** | `3000` | Docker / pip | Docker / pip | Docker / pip | Ollama frontend |
+| **LibreChat** | `3080` | Docker | Docker | Docker | Multi-provider chat UI |
+| **LlamaFile** | `8080` | portable binary | portable binary | portable binary | Self-contained WASM |
+| **Nitro / Cortex** | `39291` | `%USERPROFILE%\.cortex/` | `~/.cortex/` | `~/.cortex/` | Jan.ai inference engine |
+| **SGLang** | `30000` | pip | pip | pip | Structured generation server |
+| **FastChat** | `8000` | pip | pip | pip | Vicuna/ChatGLM serving |
+
+> ⚠️ **Any service binding to `0.0.0.0` is network-exposed.** All should be restricted to `127.0.0.1` per [NIST SP 800-53 SC-7](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final).
+
+---
+
+### AI Agent Frameworks & Coding Agents
+
+AI agent frameworks present a **distinct and elevated risk profile** from inference servers. They can autonomously execute code, read/write files, browse the web, call external APIs, and chain multi-step actions — often with the developer's own credentials and without per-action confirmation. Each framework below must be inventoried and its external integrations reviewed before use on federal or sensitive systems.
+
+> **Regulatory basis:** [NIST AI 600-1 §2.6](https://doi.org/10.6028/NIST.AI.600-1) (Third-Party Integrations); [NIST SP 800-53 SA-4](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final) (Acquisition Process); [NSA CSI: Deploying AI Systems Securely](https://media.defense.gov/2024/Apr/15/2003439257/-1/-1/0/CSI-DEPLOYING-AI-SYSTEMS-SECURELY.PDF)
+
+| Tool / Framework | Category | Config Location | Key Risk | Approval Required? |
+|---|---|---|---|---|
+| **AutoGPT** | Autonomous agent | `~/.autogpt/` / `~/AutoGPT/` | Autonomous web/shell access | ✅ Yes |
+| **AgentGPT** | Autonomous agent | Browser-based / `~/.agentgpt/` | Cloud-hosted; data leaves device | ✅ Yes |
+| **BabyAGI** | Task-chaining agent | pip / `~/babyagi/` | Persistent task loops; API calls | ✅ Yes |
+| **SuperAGI** | Multi-agent platform | Docker / `~/superagi/` | Tool use; external integrations | ✅ Yes |
+| **CrewAI** | Multi-agent framework | pip / `~/.crewai/` | Agents call external APIs autonomously | ✅ Yes |
+| **AutoGen** (Microsoft) | Multi-agent framework | pip / `~/.autogen/` | Code execution; network access | ✅ Yes |
+| **OpenDevin / OpenHands** | Software dev agent | pip / `~/.opendevin/` | Full shell + repo write access | ✅ Yes |
+| **GPT-Engineer** | Code generation agent | pip / `~/gpt-engineer/` | Writes and runs code autonomously | ✅ Yes |
+| **Open Interpreter** | Shell/code interpreter | pip; CLI `interpreter` | Direct OS shell execution | ✅ Yes |
+| **Aider** | AI coding assistant | pip; `~/.aider*` | Reads/writes entire repo; git commits | ✅ Review |
+| **Goose** (Block) | Developer agent | pip; `~/.goose/` | Shell execution; file R/W | ✅ Yes |
+| **Plandex** | Code planning agent | binary; `~/.plandex/` | Multi-file rewrites | ✅ Review |
+| **Mentat** | AI coding assistant | pip; `~/.mentat/` | Repo-wide file edits | ✅ Review |
+| **OpenClaw** | Autonomous agent | varies | Shell + API access | ✅ Yes |
+| **SWE-agent** | GitHub issue solver | pip / Docker | Runs code; submits PRs | ✅ Yes |
+| **Devika** | Software dev agent | pip / `~/devika/` | Browser + shell + code | ✅ Yes |
+| **Sweep** | GitHub AI assistant | GitHub App / pip | Writes code; opens PRs | ✅ Review |
+| **GPT-Pilot** | Full-stack dev agent | pip / `~/gpt-pilot/` | Scaffolds + runs full apps | ✅ Yes |
+| **LangChain / LangGraph** | Agent orchestration | pip; `~/.langchain/` | Chains of tool calls; external APIs | ✅ Review |
+| **Haystack** | NLP / RAG pipeline | pip | Document processing; API calls | ✅ Review |
+| **Flowise** | Visual agent builder | npm; `~/flowise/` | Port `3000`; no auth by default | ✅ Yes |
+| **Dify** | LLM app platform | Docker; `~/dify/` | Port `3000`; external integrations | ✅ Yes |
+| **n8n** | Workflow automation | npm/Docker; `~/.n8n/` | Connects to any external service | ✅ Yes |
+| **MemGPT / Letta** | Long-context agent | pip; `~/.memgpt/` / `~/.letta/` | Persistent memory; tool use | ✅ Review |
+| **mem0** | Agent memory layer | pip; `~/.mem0/` | Stores sensitive context | ✅ Review |
+| **TaskWeaver** (Microsoft) | Data analytics agent | pip / Docker | Code execution; data access | ✅ Yes |
+| **Phidata / Agno** | Agent framework | pip | Multi-modal; external APIs | ✅ Review |
+| **DSPy** | LM programming | pip | Optimizes prompts; API calls | ✅ Review |
+| **Hermes Agent** | Nous Research agent framework | varies | Tool-calling; external integrations | ✅ Review |
+| **ActivePieces** | Workflow automation | Docker | External API connections | ✅ Yes |
+| **PraisonAI** | Multi-agent framework | pip | Orchestrates multiple agents | ✅ Review |
+
+> 🔴 **No AI agent framework should be granted access to CUI, PII, PHI, credentials, or production systems without a formal security review aligned to [NIST AI 600-1](https://doi.org/10.6028/NIST.AI.600-1) and [DFARS 252.204-7012](https://www.acquisition.gov/dfars/252.204-7012-safeguarding-covered-defense-information-and-cyber-incident-reporting.).**
+
+---
+
+### Vector Databases (RAG Backends)
+
+Vector databases store embedded representations of documents and are often connected to LLM pipelines (RAG). They can inadvertently expose sensitive document content and should be treated as data stores requiring the same protections as the underlying data.
+
+| Tool | Default Port | Notes |
+|---|---|---|
+| **Qdrant** | `6333` (REST), `6334` (gRPC) | No auth by default in local mode |
+| **Chroma / ChromaDB** | `8000` | Embedded or server mode |
+| **Weaviate** | `8080` | GraphQL API; no auth by default |
+| **Milvus** | `19530` | Production-grade; auth optional |
+| **pgvector** | `5432` (PostgreSQL) | Inherits Postgres auth |
+| **Redis Stack** | `6379` | Redis with vector search |
+
+> **Ref:** [NIST SP 800-53 SC-28](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final) (Protection of Information at Rest)
+
+---
+
+### Comparison Table (Original Core Tools)
 
 | Tool | Windows Default Model Dir | macOS Default | Linux Default | Default Port | Notes |
 |---|---|---|---|---|---|
@@ -596,31 +686,215 @@ Get-NetTCPConnection -State Established |
 
 ---
 
+## U.S. Federal Guidance & Regulatory Citations
+
+The controls and recommendations in this document and the accompanying hardening scripts are grounded in the following U.S. federal guidance frameworks. Federal contractors handling Controlled Unclassified Information (CUI), operating under DFARS clauses, or pursuing CMMC certification **must** comply with the applicable standards below before deploying local LLM tooling in covered environments.
+
+---
+
+### NIST AI Framework & Controls
+
+| Citation | Title | URL |
+|---|---|---|
+| **NIST AI 100-1** | AI Risk Management Framework (AI RMF 1.0) | [doi.org/10.6028/NIST.AI.100-1](https://doi.org/10.6028/NIST.AI.100-1) |
+| **NIST AI 100-2** | Adversarial Machine Learning: A Taxonomy and Terminology | [doi.org/10.6028/NIST.AI.100-2](https://doi.org/10.6028/NIST.AI.100-2) |
+| **NIST AI 600-1** | AI Risk Management Framework for Generative AI *(directly covers LLMs)* | [doi.org/10.6028/NIST.AI.600-1](https://doi.org/10.6028/NIST.AI.600-1) |
+| **NIST SP 800-53 Rev 5** | Security & Privacy Controls for Information Systems | [doi.org/10.6028/NIST.SP.800-53r5](https://doi.org/10.6028/NIST.SP.800-53r5) |
+| **NIST SP 800-171 Rev 3** | Protecting CUI in Nonfederal Systems *(contractor baseline)* | [doi.org/10.6028/NIST.SP.800-171r3](https://doi.org/10.6028/NIST.SP.800-171r3) |
+| **NIST SP 800-218** | Secure Software Development Framework (SSDF) | [doi.org/10.6028/NIST.SP.800-218](https://doi.org/10.6028/NIST.SP.800-218) |
+
+**Key NIST SP 800-53 controls directly applicable to local LLM deployments:**
+
+| Control | ID | LLM Application |
+|---|---|---|
+| Boundary Protection | SC-7 | Bind services to `127.0.0.1`; firewall LLM ports |
+| Least Privilege | AC-6 | Restrict model file permissions to owner only |
+| Identification & Authentication | IA-2, IA-3 | Require API tokens; never expose unauthenticated endpoints |
+| Cryptographic Protection | SC-8, SC-28 | Encrypt traffic and model files at rest |
+| Audit Events | AU-2, AU-12 | Log all inference requests, model loads, and config changes |
+| Least Functionality | CM-7 | Disable unused LLM features: CORS, network serving, plugins |
+| Component Inventory | CM-8 | Maintain an inventory of all models, tools, and agent frameworks |
+| Supply Chain Protection | SA-12 | Verify model provenance; prohibit foreign-origin models |
+| Malicious Code Protection | SI-3 | Scan agent plugins and MCP servers for malicious behavior |
+| Information System Monitoring | SI-4 | Monitor for unauthorized LLM processes and outbound connections |
+
+---
+
+### Executive Orders
+
+| Citation | Title | URL |
+|---|---|---|
+| **EO 14110** *(Oct 30, 2023)* | Executive Order on Safe, Secure, and Trustworthy Development and Use of AI | [whitehouse.gov](https://www.whitehouse.gov/briefing-room/presidential-actions/2023/10/30/executive-order-on-the-safe-secure-and-trustworthy-development-and-use-of-artificial-intelligence/) |
+| **EO 14179** *(Jan 23, 2025)* | Removing Barriers to American Leadership in Artificial Intelligence | [whitehouse.gov](https://www.whitehouse.gov/presidential-actions/2025/01/removing-barriers-to-american-leadership-in-artificial-intelligence/) |
+
+---
+
+### OMB Policy Memoranda
+
+| Citation | Title | URL |
+|---|---|---|
+| **OMB M-24-10** | Advancing Governance, Innovation, and Risk Management for Agency Use of AI | [whitehouse.gov (PDF)](https://www.whitehouse.gov/wp-content/uploads/2024/03/M-24-10-Advancing-Governance-Innovation-and-Risk-Management.pdf) |
+| **OMB M-24-18** | Improving the Security of Federal Systems and Related AI Guidance | [whitehouse.gov (PDF)](https://www.whitehouse.gov/wp-content/uploads/2024/07/M-24-18-Securing-the-US-Government-Use-of-AI.pdf) |
+
+---
+
+### CISA Advisories & Guidance
+
+| Citation | Title | URL |
+|---|---|---|
+| **CISA AI Roadmap** | CISA Roadmap for Artificial Intelligence 2023–2024 | [cisa.gov (PDF)](https://www.cisa.gov/sites/default/files/2023-11/2023-2024-CISA-Roadmap-for-AI.pdf) |
+| **CISA/NCSC Secure AI Dev** | Guidelines for Secure AI System Development *(joint with UK NCSC, ASD, CCCS, BSI)* | [cisa.gov (PDF)](https://www.cisa.gov/sites/default/files/2023-11/guidelines_for_secure_ai_system_development_508c.pdf) |
+| **CISA AI Threats** | Defending AI Systems Against Adversarial Attacks | [cisa.gov/ai](https://www.cisa.gov/ai) |
+
+---
+
+### NSA Cybersecurity Guidance
+
+| Citation | Title | URL |
+|---|---|---|
+| **NSA CSI: Deploying AI Securely** *(Apr 2024)* | Cybersecurity Information Sheet: Best Practices for Deploying AI Systems | [media.defense.gov (PDF)](https://media.defense.gov/2024/Apr/15/2003439257/-1/-1/0/CSI-DEPLOYING-AI-SYSTEMS-SECURELY.PDF) |
+| **NSA/CISA LLM Advisory** | Cybersecurity Advisory on LLM Integration Threats | [nsa.gov](https://www.nsa.gov/Press-Room/Cybersecurity-Advisories-Guidance/) |
+
+---
+
+### FBI / Intelligence Community Warnings
+
+> 🚨 **These advisories directly inform the prohibited model list in this repository.**
+
+| Citation | Title | URL |
+|---|---|---|
+| **FBI Warning on DeepSeek** *(Feb 2025)* | Security Risks of DeepSeek and Chinese-Origin AI Models | [ic3.gov](https://www.ic3.gov/) |
+| **FBI/CISA Foreign AI Advisory** | Foreign State-Sponsored AI Tool Threats to U.S. Organizations | [fbi.gov](https://www.fbi.gov/investigate/counterintelligence/the-china-threat) |
+
+**Agencies and organizations that have formally banned or restricted DeepSeek and Chinese-origin AI models (as of 2025):**
+- U.S. Navy
+- NASA
+- U.S. Congress (House and Senate IT systems)
+- Pentagon / DoD components
+- Multiple state governments (Texas, Virginia, others)
+- Several allied foreign governments
+
+---
+
+### DoD / CMMC / DFARS
+
+| Citation | Title | URL |
+|---|---|---|
+| **CMMC 2.0** | DoD Cybersecurity Maturity Model Certification | [dodcio.defense.gov/CMMC](https://dodcio.defense.gov/CMMC/) |
+| **DoD AI Ethical Principles** | Adopted Feb 2020 | [ai.mil (PDF)](https://www.ai.mil/docs/Ethical_Principles_for_Artificial_Intelligence.pdf) |
+| **DFARS 252.204-7012** | Safeguarding Covered Defense Information and Cyber Incident Reporting | [acquisition.gov](https://www.acquisition.gov/dfars/252.204-7012-safeguarding-covered-defense-information-and-cyber-incident-reporting.) |
+| **DISA STIGs** | Application Security & Development STIG *(applies to AI/ML components)* | [public.cyber.mil/stigs](https://public.cyber.mil/stigs/) |
+
+**Applicable CMMC 2.0 practices for LLM deployments:**
+
+| Practice ID | Domain | Requirement |
+|---|---|---|
+| AC.L2-3.1.3 | Access Control | Control CUI flow; restrict to authorized users only |
+| AC.L2-3.1.14 | Access Control | Route remote access via managed access control points |
+| CM.L2-3.4.1 | Config Management | Establish and maintain baseline configurations |
+| CM.L2-3.4.6 | Config Management | Employ principle of least functionality |
+| CM.L2-3.4.7 | Config Management | Restrict/prohibit use of non-essential programs |
+| IA.L2-3.5.3 | Identification & Auth | Use multifactor authentication for privileged accounts |
+| SI.L2-3.14.2 | System Integrity | Provide protection from malicious code |
+| SI.L2-3.14.7 | System Integrity | Identify unauthorized use of systems |
+
+---
+
+### FedRAMP
+
+| Citation | Title | URL |
+|---|---|---|
+| **FedRAMP AI Guidance** | FedRAMP Guidance on AI/ML Services Authorization | [fedramp.gov/ai](https://www.fedramp.gov/ai/) |
+
+> Cloud-based LLM APIs (OpenAI, Anthropic, Cohere, AWS Bedrock, etc.) used in federal contractor environments **must** be FedRAMP authorized or operate under an equivalent authorization framework. Local LLM tools are not subject to FedRAMP directly but must comply with all other applicable controls.
+
+---
+
+### Congressional & Legislative
+
+| Citation | Title | URL |
+|---|---|---|
+| **NDAA FY2024 §1553** | National Defense Authorization Act AI Security Provisions | [congress.gov](https://www.congress.gov/bill/118th-congress/house-bill/2670) |
+| **Senate AI Roadmap** *(May 2024)* | Bipartisan Senate AI Policy Roadmap | [schumer.senate.gov (PDF)](https://www.schumer.senate.gov/imo/media/doc/ai_policy_roadmap_may2024.pdf) |
+| **House CCP Committee Letter** *(Jan 2025)* | House Select Committee on CCP: Letter on DeepSeek Risks | [selectcommittee.house.gov](https://selectcommittee.house.gov/) |
+
+---
+
+### FISMA
+
+| Citation | Title | URL |
+|---|---|---|
+| **FISMA 2014** | Federal Information Security Modernization Act | [cisa.gov](https://www.cisa.gov/topics/cyber-threats-and-advisories/federal-information-security-modernization-act) |
+
+---
+
+### Quick Reference: Control-to-Hardening Mapping
+
+| Hardening Action | Applicable Controls |
+|---|---|
+| Bind LLM services to `127.0.0.1` | NIST SP 800-53 **SC-7**; CMMC **AC.L2-3.1.3** |
+| Block LLM ports via firewall | NIST SP 800-53 **SC-7**; CMMC **AC.L2-3.1.3** |
+| Restrict model directory permissions | NIST SP 800-53 **AC-3**, **AC-6**; CMMC **AC.L2-3.1.3** |
+| Require API authentication | NIST SP 800-53 **IA-2**, **IA-3** |
+| Audit log all LLM activity | NIST SP 800-53 **AU-2**, **AU-12** |
+| Prohibit foreign-origin models | NIST AI 600-1 **§2.5**; FBI Advisory; HOUSE-DEEPSEEK |
+| Review model provenance | NIST AI 600-1 **§2.5**; NIST SP 800-53 **SA-12** |
+| Disable unused features (CORS, remote serving) | NIST SP 800-53 **CM-7**; CMMC **CM.L2-3.4.6** |
+| MCP server review & approval | NIST AI 100-2; NSA-AI-SECURITY; NIST SP 800-53 **SI-3** |
+| No agent access to CUI/credentials | NIST SP 800-171 **§3.1–3.14**; DFARS **252.204-7012** |
+| Inventory all tools and models | NIST SP 800-53 **CM-8**; CMMC **CM.L2-3.4.1** |
+| Encrypt data in transit | NIST SP 800-53 **SC-8** |
+| Encrypt models at rest | NIST SP 800-53 **SC-28** |
+| Incident reporting for violations | DFARS **252.204-7012(c)**; FISMA |
+
+---
+
 ## Using the Hardening Scripts in This Repo
 
 This repository contains scripts to help you audit and harden systems running local LLM tools. The scripts are organized by operating system:
 
 ```
 Secure-Local-LLM/
-├── README.md                  ← This file
-├── llm-hardening-menu.sh      ← Main menu launcher (macOS/Linux)
-├── llm-hardening-menu.ps1     ← Main menu launcher (Windows)
+├── README.md                      ← This file (federal guidance + full reference)
+├── llm-hardening-menu.sh          ← Main menu launcher (macOS/Linux)
+├── llm-hardening-menu.ps1         ← Main menu launcher (Windows)
+│
+├── common/                        ← Shared patterns — edit once, applies everywhere
+│   ├── patterns.sh                ← All tool/agent/port/model patterns (bash)
+│   ├── patterns.ps1               ← All tool/agent/port/model patterns (PowerShell)
+│   ├── references.sh              ← Federal citations + print_federal_references()
+│   └── references.ps1             ← Federal citations + Show-FederalReferences
+│
 ├── macos/
-│   ├── identify.sh            ← Identify LLM installations on macOS
-│   ├── harden.sh              ← Apply hardening controls on macOS
-│   ├── audit.sh               ← Run full audit checklist on macOS
-│   └── mcp-audit.sh           ← MCP-specific audit on macOS
+│   ├── identify.sh                ← Identify LLMs, agents, models, MCP on macOS
+│   ├── harden.sh                  ← Firewall (pf), localhost binding, quarantine
+│   ├── audit.sh                   ← PASS/WARN/FAIL compliance checklist
+│   └── mcp-audit.sh               ← Deep MCP/agent config + credential audit
+│
 ├── linux/
-│   ├── identify.sh            ← Identify LLM installations on Linux
-│   ├── harden.sh              ← Apply hardening controls on Linux
-│   ├── audit.sh               ← Run full audit checklist on Linux
-│   └── mcp-audit.sh           ← MCP-specific audit on Linux
+│   ├── identify.sh                ← Identify LLMs, agents, Docker, systemd
+│   ├── harden.sh                  ← ufw/firewalld/iptables + systemd overrides
+│   ├── audit.sh                   ← PASS/WARN/FAIL compliance checklist
+│   └── mcp-audit.sh               ← MCP/agent audit for Linux
+│
 └── windows/
-    ├── identify.ps1           ← Identify LLM installations on Windows
-    ├── harden.ps1             ← Apply hardening controls on Windows
-    ├── audit.ps1              ← Run full audit checklist on Windows
-    └── mcp-audit.ps1          ← MCP-specific audit on Windows
+    ├── identify.ps1               ← Registry, processes, files, network detection
+    ├── harden.ps1                 ← Windows Firewall rules, env vars, ACLs
+    ├── audit.ps1                  ← PASS/WARN/FAIL compliance checklist
+    └── mcp-audit.ps1              ← MCP config analysis + outbound connections
 ```
+
+### Covered Tools
+
+The scripts detect and audit **all** of the following:
+
+**Inference Servers:** Ollama · LM Studio · LocalAI · GPT4All · Jan.ai · text-generation-webui · KoboldCPP · TabbyML · vLLM · Xinference · PrivateGPT · AnythingLLM · Msty · LlamaFile · LM Deploy · SGLang · FastChat · Nitro/Cortex · Open WebUI · LibreChat · SillyTavern
+
+**AI Agent Frameworks:** AutoGPT · AgentGPT · BabyAGI · SuperAGI · CrewAI · AutoGen · OpenDevin/OpenHands · GPT-Engineer · Open Interpreter · Aider · Goose · Plandex · Mentat · OpenClaw · SWE-agent · Devika · Sweep · GPT-Pilot · LangChain/LangGraph · Haystack · Flowise · Dify · n8n · MemGPT/Letta · mem0 · TaskWeaver · Phidata/Agno · Hermes Agent · PraisonAI · ActivePieces
+
+**Vector Databases:** Qdrant · ChromaDB · Weaviate · Milvus · pgvector · Redis Stack
+
+**Coding Agents / AI IDEs:** Cursor · Windsurf · Continue.dev · Cody (Sourcegraph) · GitHub Copilot (via MCP)
 
 ### Quick Start
 

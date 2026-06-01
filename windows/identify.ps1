@@ -1,179 +1,172 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Windows LLM Installation Identifier
-    Identifies locally installed LLM tools, models, and related software
+    Windows LLM & AI Agent Installation Identifier
+    Regulatory basis: NIST SP 800-53 CM-8; NIST AI 600-1; CMMC 2.0 CM.L2-3.4.1
 #>
 
 $ErrorActionPreference = 'SilentlyContinue'
+$ScriptRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
-$ProhibitedPattern = 'deepseek|qwen|qwq|yi-\d|baichuan|chatglm|internlm|minimax|ernie|hunyuan|tigerbot|aquila|moss|belle|rugpt|saiga|fred-t5|falcon'
+. (Join-Path $ScriptRoot 'common\patterns.ps1')
+. (Join-Path $ScriptRoot 'common\references.ps1')
 
-function Write-Header  { param($t) Write-Host "`n=== $t ===" -ForegroundColor Cyan }
-function Write-Found   { param($t) Write-Host "[FOUND] $t" -ForegroundColor Green }
-function Write-Warn    { param($t) Write-Host "[WARN]  $t" -ForegroundColor Yellow }
+function Write-Header     { param($t) Write-Host "`n=== $t ===" -ForegroundColor Cyan }
+function Write-Found      { param($t) Write-Host "[FOUND]      $t" -ForegroundColor Green }
+function Write-Warn       { param($t) Write-Host "[WARN]       $t" -ForegroundColor Yellow }
 function Write-Prohibited { param($t) Write-Host "[PROHIBITED] $t" -ForegroundColor Red }
-function Write-Info    { param($t) Write-Host "  $t" }
+function Write-Review     { param($t) Write-Host "[REVIEW]     $t" -ForegroundColor Magenta }
+function Write-Info       { param($t) Write-Host "  $t" }
 
 Write-Host @"
 ╔══════════════════════════════════════════════════════════╗
-║        Windows LLM Installation Identifier              ║
+║     Windows LLM & AI Agent Installation Identifier      ║
+║  Ref: NIST SP 800-53 CM-8 · NIST AI 600-1              ║
+║       CMMC 2.0 CM.L2-3.4.1 · DFARS 252.204-7012        ║
 ╚══════════════════════════════════════════════════════════╝
 "@ -ForegroundColor Cyan
-
-Write-Host "Date: $(Get-Date)"
-Write-Host "Host: $env:COMPUTERNAME"
-Write-Host "User: $env:USERNAME"
+Write-Host "Date: $(Get-Date) | Host: $env:COMPUTERNAME | User: $env:USERNAME"
 Write-Host ""
 
-# ─── 1. RUNNING PROCESSES ─────────────────────────────────────────────────────
-Write-Header "Running LLM Processes"
-$llmProcs = Get-Process | Where-Object { $_.Name -match 'ollama|lmstudio|lm-studio|localai|gpt4all|jan|llamafile' }
-if ($llmProcs) {
-    $llmProcs | ForEach-Object { Write-Found "Process: $($_.Name) (PID: $($_.Id))" }
-} else {
-    Write-Info "No LLM processes currently running."
-}
+# ─── 1. RUNNING INFERENCE SERVER PROCESSES ────────────────────────────────────
+Write-Header "1. Running Inference Server Processes"
+$inferenceProcs = Get-Process | Where-Object { $_.Name -match $LLM_ProcessPattern }
+if ($inferenceProcs) {
+    $inferenceProcs | ForEach-Object { Write-Found "Process: $($_.Name) (PID: $($_.Id))" }
+} else { Write-Info "No inference server processes running." }
 
-# ─── 2. INSTALLED APPLICATIONS ────────────────────────────────────────────────
-Write-Header "Installed LLM Applications"
+# ─── 2. RUNNING AI AGENT PROCESSES ───────────────────────────────────────────
+Write-Header "2. Running AI Agent / Framework Processes"
+$agentProcs = Get-Process | Where-Object { $_.Name -match $Agent_ProcessPattern }
+if ($agentProcs) {
+    $agentProcs | ForEach-Object { Write-Warn "Agent process: $($_.Name) (PID: $($_.Id))" }
+} else { Write-Info "No AI agent processes running." }
+
+# ─── 3. INSTALLED APPLICATIONS ────────────────────────────────────────────────
+Write-Header "3. Installed LLM / Agent Applications"
 $regPaths = @(
     'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
     'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
     'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
 )
-$found = $false
-foreach ($path in $regPaths) {
-    Get-ItemProperty $path 2>$null |
-        Where-Object { $_.DisplayName -match 'ollama|lm.?studio|localai|gpt4all|jan\.ai|jan |llamafile|anything.?llm' } |
-        ForEach-Object {
-            Write-Found "Installed: $($_.DisplayName) $($_.DisplayVersion)"
-            $found = $true
-        }
+$foundApps = $false
+foreach ($rp in $regPaths) {
+    Get-ItemProperty $rp 2>$null |
+        Where-Object { $_.DisplayName -match 'ollama|lm.?studio|localai|gpt4all|jan\.ai|jan |llamafile|anything.?llm|msty|tabby|kobold|openwebui|open.?webui|oobabooga|cursor|windsurf|continue|cody|autogpt|crewai|opendevin|openhands|flowise|dify' } |
+        ForEach-Object { Write-Found "Installed: $($_.DisplayName) $($_.DisplayVersion)"; $foundApps = $true }
 }
-
-# Check common install paths
-$appPaths = @(
-    "$env:LOCALAPPDATA\Programs\Ollama",
-    "$env:LOCALAPPDATA\Programs\LM-Studio",
-    "$env:PROGRAMFILES\Ollama",
-    "$env:PROGRAMFILES\LM Studio",
-    "$env:LOCALAPPDATA\Jan"
-)
-foreach ($p in $appPaths) {
-    if (Test-Path $p) { Write-Found "App directory: $p"; $found = $true }
+foreach ($p in $AppPaths) {
+    if (Test-Path $p) { Write-Found "App dir: $p"; $foundApps = $true }
 }
-
-# CLI tools
-foreach ($cmd in 'ollama','localai','llamafile') {
+foreach ($cmd in ($LLM_CLITools + $Agent_CLITools)) {
     $loc = Get-Command $cmd 2>$null
-    if ($loc) { Write-Found "CLI: $cmd ($($loc.Source))"; $found = $true }
+    if ($loc) { Write-Found "CLI: $cmd ($($loc.Source))"; $foundApps = $true }
+}
+# pip packages
+$pip = Get-Command pip3,pip 2>$null | Select-Object -First 1
+if ($pip) {
+    & $pip.Name list 2>$null |
+        Where-Object { $_ -match 'ollama|llama.?cpp|transformers|langchain|langgraph|autogen|crewai|openai|anthropic|huggingface|text.generation|vllm|sglang|open.interpreter|aider|plandex|mentat|goose.ai|memgpt|mem0|letta|phidata|dspy|haystack|xinference|privategpt|localai' } |
+        ForEach-Object { Write-Warn "Python package: $_" }
+}
+if (-not $foundApps) { Write-Info "No LLM/agent applications found." }
+
+# ─── 4. AGENT CONFIG DIRECTORIES ──────────────────────────────────────────────
+Write-Header "4. Agent Config / Workspace Directories"
+$agentDirs = @(
+    "$env:USERPROFILE\.autogpt", "$env:USERPROFILE\AutoGPT", "$env:USERPROFILE\Auto-GPT",
+    "$env:USERPROFILE\.crewai", "$env:USERPROFILE\.autogen",
+    "$env:USERPROFILE\.opendevin", "$env:USERPROFILE\.openhands",
+    "$env:USERPROFILE\.aider", "$env:USERPROFILE\.goose",
+    "$env:USERPROFILE\.plandex", "$env:USERPROFILE\.mentat",
+    "$env:USERPROFILE\.continue", "$env:USERPROFILE\.cody",
+    "$env:USERPROFILE\flowise", "$env:USERPROFILE\.n8n",
+    "$env:USERPROFILE\.memgpt", "$env:USERPROFILE\.letta",
+    "$env:USERPROFILE\langchain", "$env:USERPROFILE\dify",
+    "$env:USERPROFILE\privategpt", "$env:USERPROFILE\anythingllm"
+)
+foreach ($d in $agentDirs) {
+    if (Test-Path $d) { Write-Warn "Agent config dir: $d" }
 }
 
-if (-not $found) { Write-Info "No LLM applications found." }
-
-# ─── 3. MODEL DIRECTORIES ─────────────────────────────────────────────────────
-Write-Header "Model Directories"
-$modelDirs = @(
-    "$env:USERPROFILE\.ollama\models",
-    "$env:USERPROFILE\.lmstudio\models",
-    "$env:USERPROFILE\.cache\lm-studio\models",
-    "$env:APPDATA\LM Studio",
-    "$env:LOCALAPPDATA\nomic.ai\GPT4All",
-    "$env:USERPROFILE\jan\models",
-    "$env:USERPROFILE\.localai\models"
-)
-foreach ($dir in $modelDirs) {
+# ─── 5. MODEL DIRECTORIES ─────────────────────────────────────────────────────
+Write-Header "5. Model Directories  [NIST AI 600-1 §2.5: Model Provenance]"
+foreach ($dir in $ModelDirs) {
     if (Test-Path $dir) {
-        $count = (Get-ChildItem -Path $dir -Recurse -Include '*.gguf','*.bin','*.safetensors','*.ggml' -ErrorAction SilentlyContinue | Measure-Object).Count
-        $size = (Get-ChildItem -Path $dir -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
-        $sizeMB = [math]::Round($size / 1MB, 1)
-        Write-Found "Dir: $dir ($count model files, ~${sizeMB}MB)"
+        $count = (Get-ChildItem -Path $dir -Recurse -Include $ModelExtensions -ErrorAction SilentlyContinue | Measure-Object).Count
+        $sizeMB = [math]::Round((Get-ChildItem -Path $dir -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB, 1)
+        Write-Found "$dir ($count model files, ~${sizeMB}MB)"
     }
 }
 
-# ─── 4. LIST OLLAMA MODELS ────────────────────────────────────────────────────
-Write-Header "Ollama Registered Models"
+# ─── 6. OLLAMA REGISTERED MODELS ──────────────────────────────────────────────
+Write-Header "6. Ollama Registered Models"
 if (Get-Command ollama 2>$null) {
-    try { ollama list } catch { Write-Info "Ollama installed but not responding." }
-} else {
-    Write-Info "Ollama CLI not found."
-}
+    try { ollama list } catch { Write-Info "Ollama not responding." }
+} else { Write-Info "Ollama not installed." }
 
-# ─── 5. ALL MODEL FILES ───────────────────────────────────────────────────────
-Write-Header "Model Files Found"
-Write-Info "(Searching user profile — may take a moment...)"
-Get-ChildItem -Path $env:USERPROFILE -Recurse -Include '*.gguf','*.safetensors','*.ggml' -ErrorAction SilentlyContinue |
+# ─── 7. ALL MODEL FILES ───────────────────────────────────────────────────────
+Write-Header "7. All Model Files Found"
+Write-Info "(searching user profile...)"
+Get-ChildItem -Path $env:USERPROFILE -Recurse -Include $ModelExtensions -ErrorAction SilentlyContinue |
     ForEach-Object {
         $sizeMB = [math]::Round($_.Length / 1MB, 1)
         Write-Info "[${sizeMB}MB] $($_.FullName)"
     }
 
-# ─── 6. PROHIBITED MODEL SCAN ─────────────────────────────────────────────────
-Write-Header "Prohibited / Foreign-Origin Model Scan"
-$prohibitedFound = 0
-Get-ChildItem -Path $env:USERPROFILE -Recurse -Include '*.gguf','*.bin','*.safetensors' -ErrorAction SilentlyContinue |
+# ─── 8. PROHIBITED MODEL SCAN ─────────────────────────────────────────────────
+Write-Header "8. Prohibited / Foreign-Origin Model Scan  [FBI-DEEPSEEK; HOUSE-DEEPSEEK]"
+Get-ChildItem -Path $env:USERPROFILE -Recurse -Include $ModelExtensions -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -match $ProhibitedPattern } |
-    ForEach-Object {
-        Write-Prohibited "PROHIBITED MODEL: $($_.FullName)"
-        $prohibitedFound++
-    }
+    ForEach-Object { Write-Prohibited "PROHIBITED: $($_.FullName)" }
 
 if (Get-Command ollama 2>$null) {
     ollama list 2>$null | Where-Object { $_ -match $ProhibitedPattern } |
         ForEach-Object { Write-Prohibited "PROHIBITED OLLAMA MODEL: $_" }
 }
-Write-Info "Prohibited model scan complete."
+Get-ChildItem -Path $env:USERPROFILE -Recurse -Include $ModelExtensions -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -match $ReviewPattern } |
+    ForEach-Object { Write-Review "VERIFY ORIGIN: $($_.FullName)" }
 
-# ─── 7. NETWORK EXPOSURE CHECK ────────────────────────────────────────────────
-Write-Header "Network Exposure Check"
-$llmPorts = @(11434, 1234, 8080, 3000, 8000, 5000)
-foreach ($port in $llmPorts) {
-    $conn = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
-    if ($conn) {
-        foreach ($c in $conn) {
-            if ($c.LocalAddress -in @('0.0.0.0', '::')) {
-                Write-Warn "Port $port EXPOSED on all interfaces! (Address: $($c.LocalAddress))"
+# ─── 9. NETWORK EXPOSURE ──────────────────────────────────────────────────────
+Write-Header "9. Network Exposure Check  [NIST SP 800-53 SC-7: Boundary Protection]"
+foreach ($portEntry in $LLM_Ports.GetEnumerator()) {
+    $port = $portEntry.Key; $tool = $portEntry.Value
+    $conns = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+    if ($conns) {
+        foreach ($c in $conns) {
+            if ($c.LocalAddress -in @('0.0.0.0','::','*')) {
+                Write-Warn "Port $port ($tool) EXPOSED on all interfaces!  [NIST SP 800-53 SC-7]"
             } else {
-                Write-Found "Port $port listening on: $($c.LocalAddress) (local only)"
+                Write-Found "Port $port ($tool) — localhost-bound ($($c.LocalAddress))"
             }
         }
     }
 }
 
-# ─── 8. OLLAMA ENV VARIABLE ───────────────────────────────────────────────────
-Write-Header "Ollama Configuration"
-$ollamaHost = [System.Environment]::GetEnvironmentVariable('OLLAMA_HOST')
-if ($ollamaHost) {
-    if ($ollamaHost -match '0\.0\.0\.0|^:') {
-        Write-Warn "OLLAMA_HOST=$ollamaHost — EXPOSED TO NETWORK!"
-    } else {
-        Write-Found "OLLAMA_HOST=$ollamaHost"
-    }
-} else {
-    Write-Info "OLLAMA_HOST not set (defaults to localhost:11434)"
-}
+# ─── 10. OLLAMA HOST ENV ──────────────────────────────────────────────────────
+Write-Header "10. Ollama Configuration  [NIST SP 800-53 SC-7, IA-3]"
+$oh = [System.Environment]::GetEnvironmentVariable('OLLAMA_HOST', 'User')
+if ($oh) {
+    if ($oh -match '0\.0\.0\.0|^:') { Write-Warn "OLLAMA_HOST=$oh — EXPOSED!  [NIST SP 800-53 SC-7]" }
+    else { Write-Found "OLLAMA_HOST=$oh" }
+} else { Write-Info "OLLAMA_HOST not set (defaults to localhost)." }
 
-# ─── 9. MCP CONFIG SCAN ───────────────────────────────────────────────────────
-Write-Header "MCP Config Files"
-$mcpPaths = @(
-    "$env:APPDATA\Claude\claude_desktop_config.json",
-    "$env:USERPROFILE\.cursor\mcp.json",
-    "$env:USERPROFILE\.continue\config.json",
-    "$env:APPDATA\Code\User\settings.json",
-    "$env:APPDATA\Cursor\User\settings.json"
-)
-foreach ($f in $mcpPaths) {
+# ─── 11. MCP CONFIG SCAN ──────────────────────────────────────────────────────
+Write-Header "11. MCP Config Files  [NIST AI 100-2; NSA-AI-SECURITY]"
+foreach ($f in $McpConfigPaths) {
     if (Test-Path $f) {
-        $content = Get-Content $f -Raw -ErrorAction SilentlyContinue
+        $content = Get-Content $f -Raw 2>$null
         if ($content -match 'mcpServers') {
-            Write-Warn "MCP config found: $f"
-            if ($content -match '"url"') { Write-Warn "  >> Contains remote MCP server (url key)!" }
+            Write-Warn "MCP config: $f"
+            if ($content -match '"url"') { Write-Warn "  >> REMOTE server detected  [FBI-FOREIGN-AI]" }
         }
     }
 }
 Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter 'mcp.json' -ErrorAction SilentlyContinue |
     ForEach-Object { Write-Warn "mcp.json: $($_.FullName)" }
 
+# ─── SUMMARY ──────────────────────────────────────────────────────────────────
 Write-Host "`n=== Scan Complete ===" -ForegroundColor Cyan
 Write-Host "Run audit.ps1 for full checklist or harden.ps1 to apply controls."
+Show-FederalReferences
