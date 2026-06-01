@@ -188,7 +188,7 @@ if ($ollamaSvc -and $ollamaSvc.StartType -eq 'Automatic') { chk_warn "Ollama ser
 
 # ─── SUMMARY ──────────────────────────────────────────────────────────────────
 Write-Host "`n╔══════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║                  AUDIT SUMMARY                          ║" -ForegroundColor Cyan
+Write-Host "║                  AUDIT SUMMARY                           ║" -ForegroundColor Cyan
 Write-Host "╚══════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host "  PASS: $Pass  " -ForegroundColor Green -NoNewline
 Write-Host "WARN: $Warn  " -ForegroundColor Yellow -NoNewline

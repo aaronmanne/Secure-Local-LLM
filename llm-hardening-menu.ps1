@@ -48,7 +48,7 @@ function Show-Banner {
     Clear-Host
     Write-Host @"
 ╔═══════════════════════════════════════════════════════════════╗
-║          Local LLM Security Hardening Suite                  ║
+║          Local LLM Security Hardening Suite                   ║
 ║          Federal Contractor Security Guidance                 ║
 ╚═══════════════════════════════════════════════════════════════╝
 "@ -ForegroundColor Cyan

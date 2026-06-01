@@ -22,7 +22,7 @@ print_header() { echo -e "\n${BOLD}${CYAN}=== $1 ===${NC}"; }
 
 echo -e "${BOLD}${CYAN}"
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║       macOS LLM & Agent Security Audit Checklist        ║"
+echo "║       macOS LLM & Agent Security Audit Checklist         ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo "Date: $(date) | Host: $(hostname) | User: $(whoami)"
@@ -165,7 +165,7 @@ find "$HOME/Library/LaunchAgents" /Library/LaunchAgents /Library/LaunchDaemons 2
 # ─── SUMMARY ──────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}${CYAN}║                  AUDIT SUMMARY                          ║${NC}"
+echo -e "${BOLD}${CYAN}║                  AUDIT SUMMARY                           ║${NC}"
 echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
 echo -e "  ${GREEN}PASS: $PASS${NC}   ${YELLOW}WARN: $WARN${NC}   ${RED}FAIL: $FAIL${NC}"
 echo ""

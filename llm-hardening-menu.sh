@@ -37,7 +37,7 @@ print_banner() {
     clear
     echo -e "${BOLD}${CYAN}"
     echo "╔═══════════════════════════════════════════════════════════════╗"
-    echo "║          Local LLM Security Hardening Suite                  ║"
+    echo "║          Local LLM Security Hardening Suite                   ║"
     echo "║          Federal Contractor Security Guidance                 ║"
     echo "╚═══════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"

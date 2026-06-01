@@ -22,9 +22,9 @@ print_info()       { echo -e "  $1"; }
 
 echo -e "${BOLD}${CYAN}"
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║     Linux LLM & AI Agent Installation Identifier        ║"
-echo "║  Ref: NIST SP 800-53 CM-8 · NIST AI 600-1              ║"
-echo "║       CMMC 2.0 CM.L2-3.4.1 · DFARS 252.204-7012        ║"
+echo "║     Linux LLM & AI Agent Installation Identifier         ║"
+echo "║  Ref: NIST SP 800-53 CM-8 · NIST AI 600-1                ║"
+echo "║       CMMC 2.0 CM.L2-3.4.1 · DFARS 252.204-7012          ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo "Date: $(date) | Host: $(hostname) | User: $(whoami)"

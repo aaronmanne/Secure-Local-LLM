@@ -22,9 +22,9 @@ print_skip()   { echo -e "  [SKIP] $1"; }
 
 echo -e "${BOLD}${CYAN}"
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║            Linux LLM Hardening Script                   ║"
-echo "║  Ref: NIST SP 800-53 SC-7 · AC-6 · AU-2 · CM-7         ║"
-echo "║       NIST AI 600-1 · DFARS 252.204-7012 · CMMC 2.0    ║"
+echo "║            Linux LLM Hardening Script                    ║"
+echo "║  Ref: NIST SP 800-53 SC-7 · AC-6 · AU-2 · CM-7           ║"
+echo "║       NIST AI 600-1 · DFARS 252.204-7012 · CMMC 2.0      ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo "Date: $(date) | Host: $(hostname) | User: $(whoami)"

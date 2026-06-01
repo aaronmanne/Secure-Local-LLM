@@ -23,9 +23,9 @@ print_header() { echo -e "\n${BOLD}${CYAN}=== $1 ===${NC}"; }
 
 echo -e "${BOLD}${CYAN}"
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║       Linux LLM & Agent Security Audit Checklist        ║"
-echo "║  Ref: NIST SP 800-53 · NIST AI 600-1 · CMMC 2.0        ║"
-echo "║       DFARS 252.204-7012 · EO 14110 · FBI-DEEPSEEK      ║"
+echo "║       Linux LLM & Agent Security Audit Checklist         ║"
+echo "║  Ref: NIST SP 800-53 · NIST AI 600-1 · CMMC 2.0          ║"
+echo "║       DFARS 252.204-7012 · EO 14110 · FBI-DEEPSEEK       ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo "Date: $(date) | Host: $(hostname) | User: $(whoami)"
@@ -182,7 +182,7 @@ done
 # ─── SUMMARY ──────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}${CYAN}║                  AUDIT SUMMARY                          ║${NC}"
+echo -e "${BOLD}${CYAN}║                  AUDIT SUMMARY                           ║${NC}"
 echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
 echo -e "  ${GREEN}PASS: $PASS${NC}   ${YELLOW}WARN: $WARN${NC}   ${RED}FAIL: $FAIL${NC}"
 [ "$FAIL" -gt 0 ] && echo -e "${RED}ACTION REQUIRED: $FAIL critical issue(s). Run harden.sh or escalate.${NC}"

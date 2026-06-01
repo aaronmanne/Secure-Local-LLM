@@ -21,9 +21,9 @@ print_header() { echo -e "\n${BOLD}${CYAN}=== $1 ===${NC}"; }
 
 echo -e "${BOLD}${CYAN}"
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║          macOS MCP Security Audit                       ║"
-echo "║  Ref: NIST AI 100-2 · NSA-AI-SECURITY · NIST 800-53    ║"
-echo "║       SI-3 · CA-7 · SA-12 (Supply Chain)               ║"
+echo "║          macOS MCP Security Audit                        ║"
+echo "║  Ref: NIST AI 100-2 · NSA-AI-SECURITY · NIST 800-53      ║"
+echo "║       SI-3 · CA-7 · SA-12 (Supply Chain)                 ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo "Date: $(date) | Host: $(hostname)"
@@ -151,7 +151,7 @@ done
 # ─── SUMMARY ──────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}${CYAN}║              MCP AUDIT SUMMARY                          ║${NC}"
+echo -e "${BOLD}${CYAN}║              MCP AUDIT SUMMARY                           ║${NC}"
 echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
 echo -e "  ${GREEN}PASS: $PASS${NC}   ${YELLOW}WARN: $WARN${NC}   ${RED}FAIL: $FAIL${NC}"
 [ "$FAIL" -gt 0 ] && echo -e "${RED}CRITICAL: $FAIL issue(s) — escalate to InfoSec immediately.${NC}"

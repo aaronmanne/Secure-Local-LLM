@@ -23,9 +23,9 @@ print_skip()   { echo -e "  [SKIP] $1"; }
 
 echo -e "${BOLD}${CYAN}"
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║            macOS LLM Hardening Script                   ║"
-echo "║  Ref: NIST SP 800-53 SC-7 · IA-2 · AU-2                ║"
-echo "║       NIST AI 600-1 · DFARS 252.204-7012 · CMMC 2.0    ║"
+echo "║            macOS LLM Hardening Script                    ║"
+echo "║  Ref: NIST SP 800-53 SC-7 · IA-2 · AU-2                  ║"
+echo "║       NIST AI 600-1 · DFARS 252.204-7012 · CMMC 2.0      ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo "Date: $(date) | Host: $(hostname) | User: $(whoami)"

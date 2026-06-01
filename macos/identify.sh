@@ -23,7 +23,7 @@ print_info()       { echo -e "  $1"; }
 
 echo -e "${BOLD}${CYAN}"
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║     macOS LLM & AI Agent Installation Identifier        ║"
+echo "║     macOS LLM & AI Agent Installation Identifier         ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo "Date: $(date) | Host: $(hostname) | User: $(whoami)"
