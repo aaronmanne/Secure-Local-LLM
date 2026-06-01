@@ -121,8 +121,129 @@ else
     print_info "Ollama not installed."
 fi
 
-# ─── 9. ALL MODEL FILES ───────────────────────────────────────────────────────
-print_header "9. All Model Files Found"
+# ─── 9. SPLIT & BLOB-BASED MODEL STORAGE ─────────────────────────────────────
+print_header "9. Split & Blob-Based Model Storage"
+print_info "Scanning tools that store models as content-addressed blobs or shards..."
+SPLIT_FOUND=0
+
+# ── Ollama: content-addressed blob store (sha256-* files, no extension) ───────
+for OLLAMA_BLOB_DIR in \
+    "$HOME/.ollama/models/blobs" \
+    "/usr/share/ollama/.ollama/models/blobs" \
+    "/var/lib/ollama/models/blobs"; do
+    if [ -d "$OLLAMA_BLOB_DIR" ]; then
+        OLLAMA_MANIFEST_DIR="${OLLAMA_BLOB_DIR%/blobs}/manifests"
+        BLOB_COUNT=$(find "$OLLAMA_BLOB_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')
+        BLOB_TOTAL=$(du -sh "$OLLAMA_BLOB_DIR" 2>/dev/null | cut -f1 || echo "?")
+        print_found "Ollama blob store: $BLOB_COUNT content-addressed file(s), ~$BLOB_TOTAL  [$OLLAMA_BLOB_DIR]"
+        SPLIT_FOUND=$((SPLIT_FOUND+1))
+        if [ -d "$OLLAMA_MANIFEST_DIR" ]; then
+            while IFS= read -r MFILE; do
+                MODEL_ID="${MFILE#$OLLAMA_MANIFEST_DIR/}"
+                MODEL_ID="${MODEL_ID#registry.ollama.ai/}"
+                if command -v python3 &>/dev/null; then
+                    while IFS='|' read -r SIZE_GB BLOB_PATH STATUS; do
+                        if [ "$STATUS" = "ok" ]; then
+                            print_found "  [${SIZE_GB} GB] ollama://$MODEL_ID  →  $BLOB_PATH"
+                        else
+                            print_warn  "  [${SIZE_GB} GB] ollama://$MODEL_ID  →  BLOB MISSING: $BLOB_PATH"
+                        fi
+                    done < <(MFILE="$MFILE" BDIR="$OLLAMA_BLOB_DIR" python3 -c "
+import os, json
+mfile    = os.environ['MFILE']
+blob_dir = os.environ['BDIR']
+try:
+    with open(mfile) as f:
+        m = json.load(f)
+    for layer in m.get('layers', []):
+        mt = layer.get('mediaType', '')
+        if 'model' in mt or 'weights' in mt:
+            digest  = layer['digest'].replace('sha256:', 'sha256-')
+            size_gb = round(layer.get('size', 0) / 1073741824, 2)
+            blob    = os.path.join(blob_dir, digest)
+            status  = 'ok' if os.path.exists(blob) else 'missing'
+            print(f'{size_gb}|{blob}|{status}')
+except Exception:
+    pass
+" 2>/dev/null)
+                else
+                    LAYER_DIGEST=$(grep -A5 'vnd.ollama.image.model' "$MFILE" 2>/dev/null | \
+                        grep -o '"sha256:[a-f0-9]*"' | head -1 | tr -d '"' | \
+                        sed 's/sha256:/sha256-/')
+                    if [ -n "$LAYER_DIGEST" ]; then
+                        BLOB_FILE="$OLLAMA_BLOB_DIR/$LAYER_DIGEST"
+                        if [ -f "$BLOB_FILE" ]; then
+                            FSIZE=$(du -sh "$BLOB_FILE" 2>/dev/null | cut -f1 || echo "?")
+                            print_found "  [$FSIZE] ollama://$MODEL_ID  →  $BLOB_FILE"
+                        else
+                            print_warn "  ollama://$MODEL_ID  →  BLOB MISSING: $BLOB_FILE"
+                        fi
+                    fi
+                fi
+            done < <(find "$OLLAMA_MANIFEST_DIR" -type f 2>/dev/null)
+
+            # Report orphaned blobs — large blobs with no matching manifest
+            find "$OLLAMA_BLOB_DIR" -type f -size +50M 2>/dev/null | while read -r BLOB; do
+                BNAME=$(basename "$BLOB")
+                REF=$(grep -rl "${BNAME/sha256-/sha256:}" "$OLLAMA_MANIFEST_DIR" 2>/dev/null | head -1)
+                if [ -z "$REF" ]; then
+                    FSIZE=$(du -sh "$BLOB" 2>/dev/null | cut -f1 || echo "?")
+                    print_warn "  [$FSIZE] Orphaned blob (no manifest — leftover from deleted model): $BLOB"
+                fi
+            done
+        fi
+    fi
+done
+
+# ── HuggingFace Hub: blob cache + sharded safetensors ─────────────────────────
+HF_DIR="$HOME/.cache/huggingface/hub"
+if [ -d "$HF_DIR" ]; then
+    HF_TOTAL=$(du -sh "$HF_DIR" 2>/dev/null | cut -f1 || echo "?")
+    HF_COUNT=$(find "$HF_DIR" -maxdepth 1 -type d -name "models--*" 2>/dev/null | wc -l | tr -d ' ')
+    print_found "HuggingFace Hub cache: $HF_COUNT model(s), ~$HF_TOTAL  [$HF_DIR]"
+    SPLIT_FOUND=$((SPLIT_FOUND+1))
+    find "$HF_DIR" -maxdepth 1 -type d -name "models--*" 2>/dev/null | sort | while read -r MDIR; do
+        MODEL_NAME=$(basename "$MDIR" | sed 's/^models--//;s/--/\//g')
+        MODEL_SIZE=$(du -sh "$MDIR" 2>/dev/null | cut -f1 || echo "?")
+        SHARD_COUNT=$(find "$MDIR" \( -name "model-*-of-*.safetensors" -o -name "pytorch_model-*-of-*.bin" \) 2>/dev/null | wc -l | tr -d ' ')
+        BLOB_COUNT=$(find "$MDIR/blobs" -type f -size +50M 2>/dev/null | wc -l | tr -d ' ')
+        if [ "$SHARD_COUNT" -gt 0 ]; then
+            print_found "  [~$MODEL_SIZE] HuggingFace: $MODEL_NAME  ($SHARD_COUNT weight shards)"
+        elif [ "$BLOB_COUNT" -gt 0 ]; then
+            print_found "  [~$MODEL_SIZE] HuggingFace: $MODEL_NAME  ($BLOB_COUNT large blob(s))"
+        else
+            print_found "  [~$MODEL_SIZE] HuggingFace: $MODEL_NAME"
+        fi
+    done
+fi
+
+# ── LM Studio: partial / incomplete downloads ─────────────────────────────────
+for LMS_DIR in "$HOME/.lmstudio" "$HOME/.cache/lm-studio"; do
+    if [ -d "$LMS_DIR" ]; then
+        while IFS= read -r PFILE; do
+            FSIZE=$(du -sh "$PFILE" 2>/dev/null | cut -f1 || echo "?")
+            print_warn "LM Studio partial download [~$FSIZE]: $PFILE"
+            SPLIT_FOUND=$((SPLIT_FOUND+1))
+        done < <(find "$LMS_DIR" \( -name "*.part" -o -name "*.download" -o -name "*.incomplete" \) 2>/dev/null)
+    fi
+done
+
+# ── GPT4All / Jan: flag suspiciously small .gguf (stub / incomplete) ──────────
+for TOOL_DIR in \
+    "$HOME/.local/share/nomic.ai/GPT4All" \
+    "$HOME/jan/models"; do
+    if [ -d "$TOOL_DIR" ]; then
+        find "$TOOL_DIR" -name "*.gguf" -size -1M 2>/dev/null | while read -r f; do
+            FSIZE=$(du -sh "$f" 2>/dev/null | cut -f1 || echo "?")
+            print_warn "Possibly incomplete model file [$FSIZE]: $f"
+        done
+    fi
+done
+
+[ "$SPLIT_FOUND" -eq 0 ] && print_info "No split/blob model stores detected."
+
+# ─── 10. ALL STANDARD MODEL FILES ─────────────────────────────────────────────
+print_header "10. All Standard Model Files Found"
 print_info "(searching $HOME, /usr, /opt...)"
 find "$HOME" /usr /opt /var 2>/dev/null \
     -type f \( -name "*.gguf" -o -name "*.safetensors" -o -name "*.ggml" -o -name "*.onnx" -o -name "*.llamafile" \) \
@@ -130,8 +251,8 @@ find "$HOME" /usr /opt /var 2>/dev/null \
     SIZE=$(du -sh "$f" 2>/dev/null | cut -f1 || echo "?"); print_info "[$SIZE] $f"
 done
 
-# ─── 10. PROHIBITED MODEL SCAN ────────────────────────────────────────────────
-print_header "10. Prohibited / Foreign-Origin Model Scan  [FBI-DEEPSEEK; HOUSE-DEEPSEEK]"
+# ─── 11. PROHIBITED MODEL SCAN ────────────────────────────────────────────────
+print_header "11. Prohibited / Foreign-Origin Model Scan  [FBI-DEEPSEEK; HOUSE-DEEPSEEK]"
 find "$HOME" /usr/share/ollama 2>/dev/null \
     -type f \( -name "*.gguf" -o -name "*.bin" -o -name "*.safetensors" -o -name "*.ggml" \) \
     2>/dev/null | grep -iE "$PROHIBITED_PATTERN" | while read -r f; do
@@ -142,14 +263,22 @@ if command -v ollama &>/dev/null; then
         print_prohibited "PROHIBITED OLLAMA MODEL: $line"
     done
 fi
+# Also scan HuggingFace Hub model names
+if [ -d "$HOME/.cache/huggingface/hub" ]; then
+    find "$HOME/.cache/huggingface/hub" -maxdepth 1 -type d -name "models--*" 2>/dev/null | while read -r d; do
+        MN=$(basename "$d" | sed 's/^models--//;s/--/\//g')
+        echo "$MN" | grep -qiE "$PROHIBITED_PATTERN" && \
+            print_prohibited "PROHIBITED HuggingFace model: $MN" || true
+    done
+fi
 find "$HOME" -type f \( -name "*.gguf" -o -name "*.safetensors" \) 2>/dev/null | \
     grep -iE "$REVIEW_PATTERN" | while read -r f; do
         print_review "VERIFY ORIGIN: $f"
     done
 print_info "Prohibited scan complete."
 
-# ─── 11. NETWORK EXPOSURE ─────────────────────────────────────────────────────
-print_header "11. Network Exposure Check  [NIST SP 800-53 SC-7]"
+# ─── 12. NETWORK EXPOSURE ─────────────────────────────────────────────────────
+print_header "12. Network Exposure Check  [NIST SP 800-53 SC-7]"
 for entry in "${LLM_PORTS[@]}"; do
     PORT="${entry%%:*}"; TOOL="${entry#*:}"
     if command -v ss &>/dev/null; then
@@ -165,8 +294,8 @@ for entry in "${LLM_PORTS[@]}"; do
     fi
 done
 
-# ─── 12. OLLAMA CONFIG / SYSTEMD ENV ──────────────────────────────────────────
-print_header "12. Ollama Configuration"
+# ─── 13. OLLAMA CONFIG / SYSTEMD ENV ──────────────────────────────────────────
+print_header "13. Ollama Configuration"
 OH="${OLLAMA_HOST:-}"
 [ -n "$OH" ] && {
     echo "$OH" | grep -qE "0\.0\.0\.0|^:" && \
@@ -178,8 +307,8 @@ for f in /etc/systemd/system/ollama.service.d/*.conf /lib/systemd/system/ollama.
         print_warn "OLLAMA_HOST in systemd unit: $f → $(grep OLLAMA_HOST $f)"
 done
 
-# ─── 13. MCP CONFIG SCAN ──────────────────────────────────────────────────────
-print_header "13. MCP Config Files  [NIST AI 100-2; NSA-AI-SECURITY]"
+# ─── 14. MCP CONFIG SCAN ──────────────────────────────────────────────────────
+print_header "14. MCP Config Files  [NIST AI 100-2; NSA-AI-SECURITY]"
 for f in "${MCP_CONFIG_PATHS_LINUX[@]}"; do
     if [ -f "$f" ] && grep -q "mcpServers" "$f" 2>/dev/null; then
         print_warn "MCP config: $f"

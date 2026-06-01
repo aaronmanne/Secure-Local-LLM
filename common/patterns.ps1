@@ -50,25 +50,30 @@ $ModelExtensions = @('*.gguf', '*.ggml', '*.safetensors', '*.ot', '*.onnx', '*.l
 # .bin / .pt / .pth omitted from broad searches (too many false positives on Windows)
 
 # ─── MODEL DIRECTORIES ────────────────────────────────────────────────────────
+# Note: Ollama stores models as content-addressed blobs (sha256-* files, no extension)
+# in the blobs\ subdirectory — NOT as .gguf files. The identify script handles these
+# specially via manifest JSON parsing. HuggingFace Hub stores shards + blobs under
+# .cache\huggingface\hub\models--<org>--<model>\.
 $ModelDirs = @(
-    "$env:USERPROFILE\.ollama\models",
-    "$env:USERPROFILE\.lmstudio\models",
-    "$env:USERPROFILE\.cache\lm-studio\models",
-    "$env:APPDATA\LM Studio",
-    "$env:LOCALAPPDATA\nomic.ai\GPT4All",
-    "$env:USERPROFILE\jan\models",
-    "$env:USERPROFILE\.localai\models",
-    "$env:USERPROFILE\.tabby\models",
-    "$env:USERPROFILE\.cache\koboldcpp",
-    "$env:USERPROFILE\text-generation-webui\models",
-    "$env:USERPROFILE\.cache\xinference\models",
-    "$env:USERPROFILE\.cache\huggingface\hub",
-    "$env:LOCALAPPDATA\Programs\Msty",
-    "$env:USERPROFILE\privategpt\models",
-    "$env:USERPROFILE\anythingllm\models",
-    "$env:USERPROFILE\.cortex\models",
-    "$env:USERPROFILE\.nitro\models",
-    "$env:APPDATA\Jan"
+    "$env:USERPROFILE\.ollama\models",                        # Ollama (blob store)
+    "$env:USERPROFILE\.ollama\models\blobs",                  # Ollama raw blobs
+    "$env:USERPROFILE\.lmstudio\models",                      # LM Studio
+    "$env:USERPROFILE\.cache\lm-studio\models",               # LM Studio cache
+    "$env:APPDATA\LM Studio",                                 # LM Studio AppData
+    "$env:LOCALAPPDATA\nomic.ai\GPT4All",                     # GPT4All
+    "$env:USERPROFILE\jan\models",                            # Jan
+    "$env:USERPROFILE\.localai\models",                       # LocalAI
+    "$env:USERPROFILE\.tabby\models",                         # Tabby
+    "$env:USERPROFILE\.cache\koboldcpp",                      # KoboldCPP
+    "$env:USERPROFILE\text-generation-webui\models",          # text-gen-webui
+    "$env:USERPROFILE\.cache\xinference\models",              # Xinference
+    "$env:USERPROFILE\.cache\huggingface\hub",                # HuggingFace Hub (shards + blobs)
+    "$env:LOCALAPPDATA\Programs\Msty",                        # Msty
+    "$env:USERPROFILE\privategpt\models",                     # PrivateGPT
+    "$env:USERPROFILE\anythingllm\models",                    # AnythingLLM
+    "$env:USERPROFILE\.cortex\models",                        # Cortex
+    "$env:USERPROFILE\.nitro\models",                         # Nitro
+    "$env:APPDATA\Jan"                                        # Jan AppData
 )
 
 # ─── INSTALLED APP PATHS ──────────────────────────────────────────────────────

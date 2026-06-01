@@ -80,49 +80,56 @@ MODEL_EXT_FIND='( -name "*.gguf" -o -name "*.ggml" -o -name "*.safetensors" -o -
 # Note: .bin and .pt/.pth intentionally omitted from broad filesystem searches (too many false positives)
 
 # ─── MODEL DIRECTORIES ────────────────────────────────────────────────────────
+# Note: Ollama stores models as content-addressed blobs (sha256-*) in the blobs/
+# subdirectory — NOT as .gguf files. The identify scripts handle these specially.
+# HuggingFace Hub stores sharded safetensors and blobs in ~/.cache/huggingface/hub.
 declare -a MODEL_DIRS_MACOS=(
-    "$HOME/.ollama/models"
-    "$HOME/.lmstudio/models"
-    "$HOME/Library/Application Support/LM Studio"
-    "$HOME/Library/Application Support/nomic.ai/GPT4All"
-    "$HOME/jan/models"
-    "$HOME/.localai/models"
-    "$HOME/.cache/lm-studio"
-    "$HOME/.tabby/models"
-    "$HOME/.cache/koboldcpp"
-    "$HOME/text-generation-webui/models"
-    "$HOME/.cache/xinference/models"
-    "$HOME/.cache/huggingface/hub"
-    "$HOME/.ollama"
-    "$HOME/Library/Application Support/Msty"
-    "$HOME/.continue/models"
-    "$HOME/.cache/lm_studio"
-    "$HOME/privategpt/models"
-    "$HOME/anythingllm/models"
-    "$HOME/.cortex/models"
-    "$HOME/.nitro/models"
+    "$HOME/.ollama/models"                                   # Ollama (blob store)
+    "$HOME/.ollama/models/blobs"                             # Ollama raw blobs
+    "$HOME/.lmstudio/models"                                 # LM Studio
+    "$HOME/Library/Application Support/LM Studio"           # LM Studio alt
+    "$HOME/Library/Application Support/nomic.ai/GPT4All"    # GPT4All
+    "$HOME/jan/models"                                       # Jan
+    "$HOME/.localai/models"                                  # LocalAI
+    "$HOME/.cache/lm-studio"                                 # LM Studio cache
+    "$HOME/.tabby/models"                                    # Tabby
+    "$HOME/.cache/koboldcpp"                                 # KoboldCPP
+    "$HOME/text-generation-webui/models"                     # text-gen-webui
+    "$HOME/.cache/xinference/models"                         # Xinference
+    "$HOME/.cache/huggingface/hub"                           # HuggingFace Hub (shards + blobs)
+    "$HOME/Library/Application Support/Msty"                # Msty
+    "$HOME/.continue/models"                                 # Continue
+    "$HOME/.cache/lm_studio"                                 # LM Studio cache alt
+    "$HOME/privategpt/models"                                # PrivateGPT
+    "$HOME/anythingllm/models"                               # AnythingLLM
+    "$HOME/.cortex/models"                                   # Cortex
+    "$HOME/.nitro/models"                                    # Nitro
 )
 
 declare -a MODEL_DIRS_LINUX=(
-    "$HOME/.ollama/models"
-    "/usr/share/ollama/.ollama/models"
-    "$HOME/.lmstudio/models"
-    "$HOME/jan/models"
-    "/usr/share/local-ai/models"
-    "$HOME/.local/share/nomic.ai/GPT4All"
-    "$HOME/.cache/lm-studio"
-    "$HOME/.tabby/models"
-    "$HOME/.cache/koboldcpp"
-    "$HOME/text-generation-webui/models"
-    "$HOME/.cache/xinference/models"
-    "$HOME/.cache/huggingface/hub"
-    "/usr/share/text-generation-inference/data"
-    "$HOME/privategpt/models"
-    "$HOME/anythingllm/models"
-    "$HOME/.cortex/models"
-    "$HOME/.nitro/models"
-    "/opt/models"
-    "/var/lib/ollama"
+    "$HOME/.ollama/models"                                   # Ollama (blob store)
+    "$HOME/.ollama/models/blobs"                             # Ollama raw blobs
+    "/usr/share/ollama/.ollama/models"                       # Ollama system-wide
+    "/usr/share/ollama/.ollama/models/blobs"                 # Ollama system blobs
+    "/var/lib/ollama/models"                                 # Ollama service data
+    "/var/lib/ollama/models/blobs"                           # Ollama service blobs
+    "$HOME/.lmstudio/models"                                 # LM Studio
+    "$HOME/jan/models"                                       # Jan
+    "/usr/share/local-ai/models"                             # LocalAI system
+    "$HOME/.local/share/nomic.ai/GPT4All"                   # GPT4All
+    "$HOME/.cache/lm-studio"                                 # LM Studio cache
+    "$HOME/.tabby/models"                                    # Tabby
+    "$HOME/.cache/koboldcpp"                                 # KoboldCPP
+    "$HOME/text-generation-webui/models"                     # text-gen-webui
+    "$HOME/.cache/xinference/models"                         # Xinference
+    "$HOME/.cache/huggingface/hub"                           # HuggingFace Hub (shards + blobs)
+    "/usr/share/text-generation-inference/data"              # TGI
+    "$HOME/privategpt/models"                                # PrivateGPT
+    "$HOME/anythingllm/models"                               # AnythingLLM
+    "$HOME/.cortex/models"                                   # Cortex
+    "$HOME/.nitro/models"                                    # Nitro
+    "/opt/models"                                            # Generic opt
+    "/var/lib/ollama"                                        # Ollama service root
 )
 
 # ─── PROHIBITED / FLAGGED MODEL PATTERNS ──────────────────────────────────────
