@@ -4,9 +4,37 @@
     LLM Security Hardening Suite – Main Menu (Windows)
     Detects OS details and provides interactive menu to run audit/hardening scripts
 .NOTES
-    Run as Administrator for full functionality.
-    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser (if needed)
+    PREFERRED: Run via llm-hardening-menu.bat (handles signing + UAC automatically)
+    DIRECT:    powershell.exe -ExecutionPolicy Bypass -File llm-hardening-menu.ps1
+    POLICY:    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 #>
+
+# ─── Execution Policy Guard ───────────────────────────────────────────────────
+# If this script was somehow launched directly and the policy blocks it, the
+# error fires before we get here. But if we DO get here under a restrictive
+# policy (AllSigned), warn the user and offer the correct launch method.
+$currentPolicy = (Get-ExecutionPolicy -Scope CurrentUser)
+if ($currentPolicy -eq 'AllSigned' -or $currentPolicy -eq 'Restricted') {
+    Write-Host ""
+    Write-Host "╔══════════════════════════════════════════════════════════╗" -ForegroundColor Red
+    Write-Host "║  EXECUTION POLICY WARNING                                ║" -ForegroundColor Red
+    Write-Host "╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  Current policy: $currentPolicy" -ForegroundColor Yellow
+    Write-Host "  This script is not digitally signed." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  RECOMMENDED: Run the .bat launcher instead —" -ForegroundColor Cyan
+    Write-Host "    llm-hardening-menu.bat" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  ALTERNATIVE: Run directly with bypass (this session only) —" -ForegroundColor Cyan
+    Write-Host "    powershell.exe -ExecutionPolicy Bypass -File llm-hardening-menu.ps1" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  PERMANENT FIX (current user only, does not require Admin) —" -ForegroundColor Cyan
+    Write-Host "    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser" -ForegroundColor White
+    Write-Host ""
+    $choice = Read-Host "  Attempt to continue anyway? [y/N]"
+    if ($choice -notmatch '^[Yy]$') { exit 1 }
+}
 
 $ErrorActionPreference = 'SilentlyContinue'
 
@@ -49,7 +77,10 @@ function Invoke-PlatformScript {
     Write-Host "`n─── Running: $path ───" -ForegroundColor Cyan
     Write-Host ""
     try {
-        & $path
+        # Use a child PowerShell process with ExecutionPolicy Bypass so
+        # individual sub-scripts are never blocked by signing policy.
+        $result = powershell.exe -NoProfile -ExecutionPolicy Bypass -File $path
+        $result
     } catch {
         Write-Host "[ERROR] Script failed: $_" -ForegroundColor Red
     }
@@ -59,9 +90,9 @@ function Invoke-PlatformScript {
 
 function Invoke-QuickScan {
     Write-Host "`n─── Quick Scan: Identify + Audit ───" -ForegroundColor Cyan
-    & (Join-Path $PlatformDir 'identify.ps1') 2>$null
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'identify.ps1')
     Write-Host "`n─── Running audit checklist... ───" -ForegroundColor Cyan
-    & (Join-Path $PlatformDir 'audit.ps1') 2>$null
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'audit.ps1')
     Read-Host "`nPress Enter to return to menu"
 }
 
@@ -92,10 +123,10 @@ $(netstat -an 2>$null | Select-String '11434|1234|8080')
 $([System.Environment]::GetEnvironmentVariable('OLLAMA_HOST', 'User'))
 "@ | Out-File "$evidenceDir\evidence.txt" -Encoding UTF8
 
-    # Run scripts and capture output
-    try { & (Join-Path $PlatformDir 'identify.ps1') 2>$null | Out-File "$evidenceDir\identify.txt" -Encoding UTF8 } catch {}
-    try { & (Join-Path $PlatformDir 'audit.ps1')    2>$null | Out-File "$evidenceDir\audit.txt"    -Encoding UTF8 } catch {}
-    try { & (Join-Path $PlatformDir 'mcp-audit.ps1') 2>$null | Out-File "$evidenceDir\mcp-audit.txt" -Encoding UTF8 } catch {}
+    # Run scripts via bypass process and capture output
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'identify.ps1') | Out-File "$evidenceDir\identify.txt" -Encoding UTF8
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'audit.ps1')    | Out-File "$evidenceDir\audit.txt"    -Encoding UTF8
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'mcp-audit.ps1') | Out-File "$evidenceDir\mcp-audit.txt" -Encoding UTF8
 
     # Show audit results
     Get-Content "$evidenceDir\audit.txt" 2>$null

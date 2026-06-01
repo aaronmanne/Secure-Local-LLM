@@ -5,6 +5,19 @@
     Regulatory basis: NIST AI 100-2; NSA-AI-SECURITY; NIST SP 800-53 SI-3, CA-7
 #>
 
+# ─── Execution Policy Guard ───────────────────────────────────────────────────
+# Run via llm-hardening-menu.bat, or:
+#   powershell.exe -ExecutionPolicy Bypass -File <this-script>
+if ($MyInvocation.ScriptName -ne '' -and
+    (Get-ExecutionPolicy -Scope CurrentUser) -in @('AllSigned','Restricted')) {
+    Write-Host ""
+    Write-Host "[WARN] Script is not digitally signed." -ForegroundColor Yellow
+    Write-Host "  Use llm-hardening-menu.bat to launch, or run:" -ForegroundColor Yellow
+    Write-Host "  powershell.exe -ExecutionPolicy Bypass -File `"$($MyInvocation.ScriptName)`"" -ForegroundColor Cyan
+    Write-Host ""
+}
+
+
 $ErrorActionPreference = 'SilentlyContinue'
 $ScriptRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 

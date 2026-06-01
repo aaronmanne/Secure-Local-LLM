@@ -915,6 +915,24 @@ chmod +x llm-hardening-menu.sh
 ./llm-hardening-menu.sh
 ```
 
+**Windows — recommended (double-click or run from cmd):**
+```bat
+llm-hardening-menu.bat
+```
+The `.bat` launcher handles the digital signature requirement automatically and offers to elevate to Administrator via UAC prompt.
+
+**Windows — PowerShell direct (if you prefer):**
+```powershell
+# Option A: bypass signing for this session only (no permanent change)
+powershell.exe -ExecutionPolicy Bypass -File .\llm-hardening-menu.ps1
+
+# Option B: allow local scripts permanently for your user account
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+.\llm-hardening-menu.ps1
+```
+
+> **Why the signing warning?** Windows PowerShell's default `ExecutionPolicy` on many machines is `AllSigned` or `Restricted`, which blocks unsigned `.ps1` files. This is a local-only security tool — the `.bat` launcher passes `-ExecutionPolicy Bypass` to the PowerShell process automatically so you never need to change your system policy. The scripts do not install anything or phone home.
+
 **Windows (PowerShell as Administrator):**
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
