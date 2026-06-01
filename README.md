@@ -697,7 +697,7 @@ The controls and recommendations in this document and the accompanying hardening
 | Citation | Title | URL |
 |---|---|---|
 | **NIST AI 100-1** | AI Risk Management Framework (AI RMF 1.0) | [doi.org/10.6028/NIST.AI.100-1](https://doi.org/10.6028/NIST.AI.100-1) |
-| **NIST AI 100-2** | Adversarial Machine Learning: A Taxonomy and Terminology | [doi.org/10.6028/NIST.AI.100-2](https://doi.org/10.6028/NIST.AI.100-2) |
+| **NIST AI 100-2** | Adversarial Machine Learning: A Taxonomy and Terminology | [doi.org/10.6028/NIST.AI.100-2](https://csrc.nist.gov/pubs/ai/100/2/e2025/final) |
 | **NIST AI 600-1** | AI Risk Management Framework for Generative AI *(directly covers LLMs)* | [doi.org/10.6028/NIST.AI.600-1](https://doi.org/10.6028/NIST.AI.600-1) |
 | **NIST SP 800-53 Rev 5** | Security & Privacy Controls for Information Systems | [doi.org/10.6028/NIST.SP.800-53r5](https://doi.org/10.6028/NIST.SP.800-53r5) |
 | **NIST SP 800-171 Rev 3** | Protecting CUI in Nonfederal Systems *(contractor baseline)* | [doi.org/10.6028/NIST.SP.800-171r3](https://doi.org/10.6028/NIST.SP.800-171r3) |
@@ -724,7 +724,7 @@ The controls and recommendations in this document and the accompanying hardening
 
 | Citation | Title | URL |
 |---|---|---|
-| **EO 14110** *(Oct 30, 2023)* | Executive Order on Safe, Secure, and Trustworthy Development and Use of AI | [whitehouse.gov](https://www.whitehouse.gov/briefing-room/presidential-actions/2023/10/30/executive-order-on-the-safe-secure-and-trustworthy-development-and-use-of-artificial-intelligence/) |
+| **EO 14110** *(Oct 30, 2023)* | Executive Order on Safe, Secure, and Trustworthy Development and Use of AI | [federalregister.gov](https://www.federalregister.gov/documents/2023/11/01/2023-24283/safe-secure-and-trustworthy-development-and-use-of-artificial-intelligence) |
 | **EO 14179** *(Jan 23, 2025)* | Removing Barriers to American Leadership in Artificial Intelligence | [whitehouse.gov](https://www.whitehouse.gov/presidential-actions/2025/01/removing-barriers-to-american-leadership-in-artificial-intelligence/) |
 
 ---
@@ -733,8 +733,8 @@ The controls and recommendations in this document and the accompanying hardening
 
 | Citation | Title | URL |
 |---|---|---|
-| **OMB M-24-10** | Advancing Governance, Innovation, and Risk Management for Agency Use of AI | [whitehouse.gov (PDF)](https://www.whitehouse.gov/wp-content/uploads/2024/03/M-24-10-Advancing-Governance-Innovation-and-Risk-Management.pdf) |
-| **OMB M-24-18** | Improving the Security of Federal Systems and Related AI Guidance | [whitehouse.gov (PDF)](https://www.whitehouse.gov/wp-content/uploads/2024/07/M-24-18-Securing-the-US-Government-Use-of-AI.pdf) |
+| **OMB M-24-10** | Advancing Governance, Innovation, and Risk Management for Agency Use of AI | [whitehouse.gov (PDF)](https://www.whitehouse.gov/wp-content/uploads/2024/03/M-24-10-Advancing-Governance-Innovation-and-Risk-Management-for-Agency-Use-of-Artificial-Intelligence.pdf) |
+| **OMB M-24-18** | Driving Efficient Acquisition of Artificial Intelligence in Government | [whitehouse.gov (PDF)](https://www.whitehouse.gov/wp-content/uploads/2025/02/M-25-22-Driving-Efficient-Acquisition-of-Artificial-Intelligence-in-Government.pdf) |
 
 ---
 
@@ -742,29 +742,29 @@ The controls and recommendations in this document and the accompanying hardening
 
 | Citation | Title | URL |
 |---|---|---|
-| **CISA AI Roadmap** | CISA Roadmap for Artificial Intelligence 2023–2024 | [cisa.gov (PDF)](https://www.cisa.gov/sites/default/files/2023-11/2023-2024-CISA-Roadmap-for-AI.pdf) |
-| **CISA/NCSC Secure AI Dev** | Guidelines for Secure AI System Development *(joint with UK NCSC, ASD, CCCS, BSI)* | [cisa.gov (PDF)](https://www.cisa.gov/sites/default/files/2023-11/guidelines_for_secure_ai_system_development_508c.pdf) |
+| **CISA AI Roadmap** | CISA Roadmap for Artificial Intelligence 2023–2024 | [cisa.gov (PDF)](https://www.cisa.gov/resources-tools/resources/roadmap-ai) |
+| **CISA/NCSC Secure AI Dev** | Guidelines for Secure AI System Development *(joint with UK NCSC, ASD, CCCS, BSI)* | [ncsc.gov.uk (PDF)](https://www.ncsc.gov.uk/files/Guidelines-for-secure-AI-system-development.pdf) |
 | **CISA AI Threats** | Defending AI Systems Against Adversarial Attacks | [cisa.gov/ai](https://www.cisa.gov/ai) |
 
 ---
 
 ### NSA Cybersecurity Guidance
 
-| Citation | Title | URL |
-|---|---|---|
-| **NSA CSI: Deploying AI Securely** *(Apr 2024)* | Cybersecurity Information Sheet: Best Practices for Deploying AI Systems | [media.defense.gov (PDF)](https://media.defense.gov/2024/Apr/15/2003439257/-1/-1/0/CSI-DEPLOYING-AI-SYSTEMS-SECURELY.PDF) |
-| **NSA/CISA LLM Advisory** | Cybersecurity Advisory on LLM Integration Threats | [nsa.gov](https://www.nsa.gov/Press-Room/Cybersecurity-Advisories-Guidance/) |
+| Citation | Title                                                                                 | URL |
+|---|---------------------------------------------------------------------------------------|---|
+| **NSA CSI: Deploying AI Securely** *(Apr 2024)* | Cybersecurity Information Sheet: Best Practices for Deploying AI Systems              | [media.defense.gov (PDF)](https://media.defense.gov/2024/Apr/15/2003439257/-1/-1/0/CSI-DEPLOYING-AI-SYSTEMS-SECURELY.PDF) |
+| **NSA** | Model Context Protocol (MCP): Security Design Considerations for AI-Driven Automation | [nsa.gov](https://www.nsa.gov/Portals/75/documents/Cybersecurity/CSI_MCP_SECURITY.pdf?ver=bmgiSbNQLP6Z_GiWtRt6bg%3d%3d) |
 
 ---
 
-### FBI / Intelligence Community Warnings
+### DOJ / FBI / Intelligence Community Warnings
 
 > 🚨 **These advisories directly inform the prohibited model list in this repository.**
 
-| Citation | Title | URL |
-|---|---|---|
-| **FBI Warning on DeepSeek** *(Feb 2025)* | Security Risks of DeepSeek and Chinese-Origin AI Models | [ic3.gov](https://www.ic3.gov/) |
-| **FBI/CISA Foreign AI Advisory** | Foreign State-Sponsored AI Tool Threats to U.S. Organizations | [fbi.gov](https://www.fbi.gov/investigate/counterintelligence/the-china-threat) |
+| Citation                         | Title | URL                                                                                                                 |
+|----------------------------------|---|---------------------------------------------------------------------------------------------------------------------|
+| **DOJ** *(DEC 2025)*             | U.S. Authorities Shut Down Major China-Linked AI Tech Smuggling Network | [justice.gov](https://www.justice.gov/opa/pr/us-authorities-shut-down-major-china-linked-ai-tech-smuggling-network) |
+| **FBI/CISA Foreign AI Advisory** | Foreign State-Sponsored AI Tool Threats to U.S. Organizations | [fbi.gov](https://www.fbi.gov/investigate/counterintelligence/the-china-threat)                                     |
 
 **Agencies and organizations that have formally banned or restricted DeepSeek and Chinese-origin AI models (as of 2025):**
 - U.S. Navy
@@ -778,12 +778,12 @@ The controls and recommendations in this document and the accompanying hardening
 
 ### DoD / CMMC / DFARS
 
-| Citation | Title | URL |
-|---|---|---|
-| **CMMC 2.0** | DoD Cybersecurity Maturity Model Certification | [dodcio.defense.gov/CMMC](https://dodcio.defense.gov/CMMC/) |
-| **DoD AI Ethical Principles** | Adopted Feb 2020 | [ai.mil (PDF)](https://www.ai.mil/docs/Ethical_Principles_for_Artificial_Intelligence.pdf) |
+| Citation | Title | URL                                                                                                                                      |
+|---|---|------------------------------------------------------------------------------------------------------------------------------------------|
+| **CMMC 2.0** | DoD Cybersecurity Maturity Model Certification | [dodcio.defense.gov/CMMC](https://dodcio.defense.gov/CMMC/)                                                                              |
+| **DOD Adopts Ethical Principles for Artificial Intelligence ** | Adopted Feb 2020 | [war.gov (PDF)](https://www.war.gov/News/Releases/release/article/2091996/dod-adopts-ethical-principles-for-artificial-intelligence/)    |
 | **DFARS 252.204-7012** | Safeguarding Covered Defense Information and Cyber Incident Reporting | [acquisition.gov](https://www.acquisition.gov/dfars/252.204-7012-safeguarding-covered-defense-information-and-cyber-incident-reporting.) |
-| **DISA STIGs** | Application Security & Development STIG *(applies to AI/ML components)* | [public.cyber.mil/stigs](https://public.cyber.mil/stigs/) |
+| **DISA STIGs** | Application Security & Development STIG *(applies to AI/ML components)* | [public.cyber.mil/stigs](https://public.cyber.mil/stigs/)                                                                                |
 
 **Applicable CMMC 2.0 practices for LLM deployments:**
 
@@ -812,11 +812,10 @@ The controls and recommendations in this document and the accompanying hardening
 
 ### Congressional & Legislative
 
-| Citation | Title | URL |
-|---|---|---|
-| **NDAA FY2024 §1553** | National Defense Authorization Act AI Security Provisions | [congress.gov](https://www.congress.gov/bill/118th-congress/house-bill/2670) |
-| **Senate AI Roadmap** *(May 2024)* | Bipartisan Senate AI Policy Roadmap | [schumer.senate.gov (PDF)](https://www.schumer.senate.gov/imo/media/doc/ai_policy_roadmap_may2024.pdf) |
-| **House CCP Committee Letter** *(Jan 2025)* | House Select Committee on CCP: Letter on DeepSeek Risks | [selectcommittee.house.gov](https://selectcommittee.house.gov/) |
+| Citation | Title | URL                                                                                                                                                                       |
+|---|---|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **NDAA FY2024 §1553** | National Defense Authorization Act AI Security Provisions | [congress.gov](https://www.congress.gov/bill/118th-congress/house-bill/2670)                                                                                              |
+| **House CCP Committee Letter** *(Jan 2025)* | House Select Committee on CCP: Letter on DeepSeek Risks | [chinaselectcommittee.house.gov](https://chinaselectcommittee.house.gov/sites/evo-subsites/selectcommitteeontheccp.house.gov/files/evo-media-document/letter-to-doc-nvidia-deepseek-pla-use_final.pdf) |
 
 ---
 
