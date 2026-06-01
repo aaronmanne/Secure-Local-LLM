@@ -1,0 +1,97 @@
+# =============================================================================
+# Secure-Local-LLM .gitignore
+# =============================================================================
+
+# ─── Audit & Evidence Output ──────────────────────────────────────────────────
+llm-audit-evidence-*/
+llm-hardening-*.log
+llm-quarantine-*/
+/tmp/llm-*
+
+# ─── OS Files ─────────────────────────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.nfs*
+
+# ─── IDEs & Editors ───────────────────────────────────────────────────────────
+# JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Vim / Emacs
+*.swp
+*.swo
+*.bak
+\#*\#
+.#*
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# ─── Node.js ──────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log
+.npm
+.yarn-integrity
+
+# ─── Secrets & Credentials ────────────────────────────────────────────────────
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*_rsa
+*_ed25519
+*_ecdsa
+secrets.json
+credentials.json
+
+# ─── LLM Model Files (never commit large binaries) ────────────────────────────
+*.gguf
+*.ggml
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.q4_0
+*.q4_k_m
+*.q8_0
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
