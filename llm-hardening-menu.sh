@@ -63,7 +63,7 @@ ensure_scripts() {
         echo "  Please ensure you are running from the repo root."
         exit 1
     fi
-    for script in identify.sh harden.sh audit.sh mcp-audit.sh; do
+    for script in identify.sh audit.sh harden.sh mcp-audit.sh; do
         if [ ! -f "$OS_DIR/$script" ]; then
             echo -e "${YELLOW}[WARN]${NC} Missing script: $OS_DIR/$script"
         else
@@ -89,29 +89,26 @@ run_script() {
     read -rp "Press Enter to return to menu..."
 }
 
-# ─── QUICK SCAN (runs identify then audit) ────────────────────────────────────
-run_quick_scan() {
-    echo -e "${CYAN}─── Quick Scan: Identify + Audit ───${NC}"
-    echo ""
-    bash "$OS_DIR/identify.sh" 2>/dev/null || true
-    echo ""
-    echo -e "${CYAN}─── Now running audit checklist... ───${NC}"
-    echo ""
-    bash "$OS_DIR/audit.sh" 2>/dev/null || true
-    echo ""
-    read -rp "Press Enter to return to menu..."
-}
-
-# ─── FULL AUDIT + EVIDENCE COLLECTION ────────────────────────────────────────
-run_full_audit() {
+# ─── IDENTIFY: full identify + MCP audit + evidence collection ───────────────
+run_identify() {
     local EVIDENCE_DIR="$HOME/llm-audit-evidence-$(date +%Y%m%d_%H%M%S)"
     mkdir -p "$EVIDENCE_DIR"
 
-    echo -e "${CYAN}─── Full Audit & Evidence Collection ───${NC}"
+    echo -e "${CYAN}─── Identify: LLM Discovery + MCP Audit + Evidence Collection ───${NC}"
     echo "Evidence will be saved to: $EVIDENCE_DIR"
     echo ""
 
-    # Collect evidence
+    # ── Live output ──────────────────────────────────────────────────────────
+    echo -e "${CYAN}─── Step 1/2: Identifying LLM installations... ───${NC}"
+    echo ""
+    bash "$OS_DIR/identify.sh" 2>/dev/null | tee "$EVIDENCE_DIR/identify.txt" || true
+
+    echo ""
+    echo -e "${CYAN}─── Step 2/2: MCP (Model Context Protocol) audit... ───${NC}"
+    echo ""
+    bash "$OS_DIR/mcp-audit.sh" 2>/dev/null | tee "$EVIDENCE_DIR/mcp-audit.txt" || true
+
+    # ── Collect supplemental system evidence ─────────────────────────────────
     {
         echo "=== LLM Audit Evidence ==="
         echo "Date: $(date)"
@@ -125,7 +122,7 @@ run_full_audit() {
         fi
 
         echo ""
-        echo "=== Model Directories ==="
+        echo "=== Model Files Found ==="
         find "$HOME" -type f \( -name "*.gguf" -o -name "*.safetensors" -o -name "*.ggml" \) 2>/dev/null || true
 
         echo ""
@@ -149,13 +146,6 @@ run_full_audit() {
 
     } > "$EVIDENCE_DIR/evidence.txt" 2>/dev/null
 
-    # Run identify and audit, capturing output
-    bash "$OS_DIR/identify.sh" > "$EVIDENCE_DIR/identify.txt" 2>&1 || true
-    bash "$OS_DIR/audit.sh"    > "$EVIDENCE_DIR/audit.txt"    2>&1 || true
-    bash "$OS_DIR/mcp-audit.sh" > "$EVIDENCE_DIR/mcp-audit.txt" 2>&1 || true
-
-    # Display audit results
-    cat "$EVIDENCE_DIR/audit.txt"
     echo ""
     echo -e "${GREEN}Evidence bundle saved to: $EVIDENCE_DIR${NC}"
     echo "Contents:"
@@ -193,9 +183,6 @@ main_menu() {
         echo "  1) 🔍  Identify LLM installations on this system"
         echo "  2) ✅  Run security audit checklist"
         echo "  3) 🔒  Apply hardening controls"
-        echo "  4) 🔐  Run MCP (Model Context Protocol) audit"
-        echo "  5) 📦  Quick scan (Identify + Audit)"
-        echo "  6) 🗂️   Full audit + collect evidence bundle"
         echo "  ─────────────────────────────────────────────"
         echo "  7) 🖥️   Switch platform (current: $OS)"
         echo "  8) 📖  View README / documentation"
@@ -204,12 +191,9 @@ main_menu() {
         read -rp "  Select option: " CHOICE
 
         case "$CHOICE" in
-            1) run_script "identify.sh" ;;
+            1) run_identify ;;
             2) run_script "audit.sh" ;;
             3) run_script "harden.sh" ;;
-            4) run_script "mcp-audit.sh" ;;
-            5) run_quick_scan ;;
-            6) run_full_audit ;;
             7) select_platform; ensure_scripts ;;
             8)
                 if command -v less &>/dev/null; then

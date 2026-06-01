@@ -88,22 +88,26 @@ function Invoke-PlatformScript {
     Read-Host "Press Enter to return to menu"
 }
 
-function Invoke-QuickScan {
-    Write-Host "`n─── Quick Scan: Identify + Audit ───" -ForegroundColor Cyan
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'identify.ps1')
-    Write-Host "`n─── Running audit checklist... ───" -ForegroundColor Cyan
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'audit.ps1')
-    Read-Host "`nPress Enter to return to menu"
-}
-
-function Invoke-FullAudit {
+function Invoke-Identify {
     $evidenceDir = "$env:USERPROFILE\llm-audit-evidence-$(Get-Date -Format 'yyyyMMdd_HHmmss')"
     New-Item -ItemType Directory -Path $evidenceDir -Force | Out-Null
 
-    Write-Host "`n─── Full Audit & Evidence Collection ───" -ForegroundColor Cyan
+    Write-Host "`n─── Identify: LLM Discovery + MCP Audit + Evidence Collection ───" -ForegroundColor Cyan
     Write-Host "Evidence will be saved to: $evidenceDir"
 
-    # Collect raw evidence
+    # Step 1: Identify
+    Write-Host "`n─── Step 1/2: Identifying LLM installations... ───" -ForegroundColor Cyan
+    $identifyOut = powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'identify.ps1')
+    $identifyOut
+    $identifyOut | Out-File "$evidenceDir\identify.txt" -Encoding UTF8
+
+    # Step 2: MCP audit
+    Write-Host "`n─── Step 2/2: MCP (Model Context Protocol) audit... ───" -ForegroundColor Cyan
+    $mcpOut = powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'mcp-audit.ps1')
+    $mcpOut
+    $mcpOut | Out-File "$evidenceDir\mcp-audit.txt" -Encoding UTF8
+
+    # Supplemental system evidence
     @"
 === LLM Audit Evidence ===
 Date: $(Get-Date)
@@ -122,14 +126,6 @@ $(netstat -an 2>$null | Select-String '11434|1234|8080')
 === OLLAMA_HOST ===
 $([System.Environment]::GetEnvironmentVariable('OLLAMA_HOST', 'User'))
 "@ | Out-File "$evidenceDir\evidence.txt" -Encoding UTF8
-
-    # Run scripts via bypass process and capture output
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'identify.ps1') | Out-File "$evidenceDir\identify.txt" -Encoding UTF8
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'audit.ps1')    | Out-File "$evidenceDir\audit.txt"    -Encoding UTF8
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PlatformDir 'mcp-audit.ps1') | Out-File "$evidenceDir\mcp-audit.txt" -Encoding UTF8
-
-    # Show audit results
-    Get-Content "$evidenceDir\audit.txt" 2>$null
 
     Write-Host "`nEvidence bundle saved to: $evidenceDir" -ForegroundColor Green
     Get-ChildItem $evidenceDir | Format-Table Name,Length -AutoSize
@@ -184,9 +180,6 @@ while ($true) {
     Write-Host "  1)  Identify LLM installations on this system"
     Write-Host "  2)  Run security audit checklist"
     Write-Host "  3)  Apply hardening controls"
-    Write-Host "  4)  Run MCP (Model Context Protocol) audit"
-    Write-Host "  5)  Quick scan (Identify + Audit)"
-    Write-Host "  6)  Full audit + collect evidence bundle"
     Write-Host "  ─────────────────────────────────────────────"
     Write-Host "  7)  View README / documentation"
     Write-Host "  Q)  Quit"
@@ -194,12 +187,9 @@ while ($true) {
 
     $choice = Read-Host "  Select option"
     switch ($choice.ToUpper()) {
-        '1' { Invoke-PlatformScript 'identify.ps1' }
+        '1' { Invoke-Identify }
         '2' { Invoke-PlatformScript 'audit.ps1' }
         '3' { Invoke-PlatformScript 'harden.ps1' }
-        '4' { Invoke-PlatformScript 'mcp-audit.ps1' }
-        '5' { Invoke-QuickScan }
-        '6' { Invoke-FullAudit }
         '7' { Show-Readme }
         'Q' { Write-Host "`nGoodbye.`n" -ForegroundColor Green; exit 0 }
         default { Write-Host "Invalid option." -ForegroundColor Yellow; Start-Sleep 1 }
