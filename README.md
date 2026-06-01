@@ -1,7 +1,19 @@
 # Securing Local LLM Software
 ### Best Practices and Federal Contractor Considerations
 
-> **Regulatory Coverage:** NIST AI 100-1 · NIST AI 600-1 · NIST SP 800-53 Rev 5 · NIST SP 800-171 Rev 3 · EO 14110 · OMB M-24-10 · CISA AI Guidance · NSA-AI-SECURITY · FBI DeepSeek Advisory · DFARS 252.204-7012 · CMMC 2.0 · FISMA
+> **Regulatory Coverage:**
+> - NIST AI 100-1
+> - NIST AI 600-1
+> - NIST SP 800-53 Rev 5
+> - NIST SP 800-171 Rev 3
+> - EO 14110
+> - OMB M-24-10
+> - CISA AI Guidance
+> - NSA-AI-SECURITY
+> - FBI DeepSeek Advisory
+> - DFARS 252.204-7012
+> - CMMC 2.0
+> - FISMA
 
 ---
 
