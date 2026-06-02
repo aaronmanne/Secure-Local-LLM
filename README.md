@@ -6,6 +6,28 @@
 
 ---
 
+## Table of Contents
+
+1. [Quick Start — Download, Install & Run the Scripts](#quick-start--download-install--run-the-scripts)
+2. [Repository Structure](#repository-structure)
+3. [Executive Summary](#executive-summary)
+4. [Key Risks & Mitigations](#key-risks--mitigations)
+5. [Hardening Guidelines Summary](#hardening-guidelines-summary)
+6. [Approved Model Sources](#approved-model-sources)
+7. [Quick Audit Checklist for IT Staff](#quick-audit-checklist-for-it-staff)
+8. [What to Do When You Find a Violation](#what-to-do-when-you-find-a-violation)
+9. [U.S. Federal Guidance & Regulatory Citations](#us-federal-guidance--regulatory-citations)
+   - [NIST AI & Cybersecurity Frameworks](#nist-ai--cybersecurity-frameworks)
+   - [Key NIST SP 800-53 Controls for LLM Deployments](#key-nist-sp-800-53-controls-for-llm-deployments)
+   - [Executive Orders & OMB Policy](#executive-orders--omb-policy)
+   - [CISA, NSA & Intelligence Community](#cisa-nsa--intelligence-community)
+   - [DoD / CMMC / DFARS / FedRAMP](#dod--cmmc--dfars--fedramp)
+   - [Applicable CMMC 2.0 Practices for LLM Deployments](#applicable-cmmc-20-practices-for-llm-deployments)
+   - [Control-to-Hardening Mapping](#control-to-hardening-mapping)
+10. [Detailed Technical Reference — Wiki](#detailed-technical-reference--wiki)
+
+---
+
 ## Quick Start — Download, Install & Run the Scripts
 
 ### 1. Clone the Repository
